@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ORCA — Ocean Reasoning & Contextual Advisory"
+description = "The public website for ORCA, an evidence-audited marine decision platform that turns complex ocean data into understandable, spatially grounded decision support for coastal communities, researchers, and maritime operators."
+version = "1.0.0"
+id = "artifacts/orca-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18574
+
+[services.development]
+run = "pnpm --filter @workspace/orca-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/orca-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/orca-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18574"
+BASE_PATH = "/"

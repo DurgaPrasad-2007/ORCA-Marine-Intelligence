@@ -1,6 +1,6 @@
-# [Project name]
+# ORCA — Ocean Reasoning & Contextual Advisory
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+ORCA turns complex marine data into evidence-backed decisions through natural-language interaction, geospatial reasoning, and deterministic analysis.
 
 ## Run & Operate
 
@@ -22,23 +22,30 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/orca-web/` — public ORCA website and public-content routes.
+- `artifacts/api-server/` — shared API service reserved for the later dashboard/MVP workflow.
+- `lib/api-spec/openapi.yaml` — source of truth for future versioned API contracts.
+- `attached_assets/` — source specification and project reference files.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first delivery is the public website and educational/trust surface; the operational query dashboard follows as a separate MVP phase.
+- Public content is local and route-based for now so the prototype remains reliable without external data providers.
+- ORCA uses explicit prototype language and distinguishes synthetic/demo examples from live or authoritative data.
+- The product story centers on evidence-first decision support: AI coordinates and explains, while validated data and deterministic software decide.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The public website explains ORCA's problem, workflow, technology, data-source model, marine-science context, trust boundaries, security posture, privacy approach, terms, methodology, research agenda, and prototype status. It prepares users for the later Digha demonstration flow: natural-language question → location/time context → marine evidence → deterministic risk → map → auditable result.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Build the full public website, landing pages, documentation, and compliance-oriented content before implementing the operational MVP.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Do not describe ORCA as an official ISRO product, certified system, official warning authority, guaranteed-safe tool, or legally compliant product without documentary evidence.
+- Keep consequential guidance framed as decision support; official warnings and professional judgement take precedence.
 
 ## Pointers
 
