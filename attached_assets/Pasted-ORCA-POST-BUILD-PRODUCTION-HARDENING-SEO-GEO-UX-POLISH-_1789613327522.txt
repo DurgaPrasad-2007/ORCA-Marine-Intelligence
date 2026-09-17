@@ -1,0 +1,696 @@
+ORCA POST-BUILD PRODUCTION HARDENING + SEO/GEO + UX POLISH
+
+The initial ORCA application has now been built end-to-end.
+
+Do NOT rebuild the application from scratch.
+Do NOT replace working architecture unnecessarily.
+Inspect the existing codebase and improve what is already there.
+
+Act as a Principal Engineer + Product Designer + SEO/GEO specialist + Security Engineer + Accessibility specialist + QA lead.
+
+Your job is to audit the current application, identify the highest-value weaknesses, then fix them directly.
+
+PRIMARY OBJECTIVE
+
+Turn the existing working ORCA build into a polished, production-oriented application without expanding scope unnecessarily.
+
+Prioritize:
+
+1. Correctness
+2. Real end-to-end functionality
+3. Real data integrity
+4. Evidence/provenance
+5. Security
+6. Accessibility
+7. SEO/GEO
+8. Performance
+9. UX quality
+10. Motion/interaction polish
+
+Do not add features simply because they look impressive.
+
+--------------------------------------------------
+1. FIRST: AUDIT THE EXISTING BUILD
+--------------------------------------------------
+
+Before changing anything, inspect:
+
+- routes
+- page structure
+- components
+- API calls
+- database usage
+- authentication
+- authorization
+- data providers
+- map implementation
+- evidence flow
+- error handling
+- loading states
+- metadata
+- robots.txt
+- sitemap.xml
+- canonical URLs
+- structured data
+- favicon/icons
+- accessibility
+- bundle size
+- console output
+- environment variables
+- production configuration
+- security headers
+- legal/footer links.
+
+Understand what is already implemented.
+
+Do not blindly rewrite.
+
+--------------------------------------------------
+2. FIX VIBECODE SIGNALS
+--------------------------------------------------
+
+Eliminate every obvious sign of an unfinished/generated website.
+
+Check and fix:
+
+- no development/Vite residue
+- no generic page titles
+- no duplicated titles
+- no missing meta descriptions
+- no missing canonical URLs
+- no missing Open Graph metadata
+- no missing favicon/app icons
+- no missing sitemap.xml
+- no incorrect robots.txt
+- no accidental AI/search crawler blocking
+- no missing lang attribute
+- no multiple accidental H1s
+- no pages without a meaningful H1
+- no missing alt text
+- no broken links
+- no placeholder text
+- no lorem ipsum
+- no fake statistics
+- no placeholder legal copy
+- no console errors
+- no hydration warnings
+- no obvious runtime warnings
+- no unnecessary source-map exposure
+- no massive avoidable JS bundles.
+
+Run the actual production build and test the result.
+
+--------------------------------------------------
+3. SEO
+--------------------------------------------------
+
+Build proper technical SEO for all public pages.
+
+Every public page must have:
+
+- unique title
+- unique meta description
+- canonical URL
+- correct robots behavior
+- Open Graph metadata
+- appropriate social metadata
+- semantic heading hierarchy
+- meaningful H1
+- crawlable content
+- internal links
+- appropriate structured data where justified.
+
+Create/verify:
+
+- sitemap.xml
+- robots.txt
+- favicon
+- manifest/app metadata where appropriate
+- 404 page.
+
+Do not over-optimize.
+
+Do not keyword-stuff.
+
+Do not create thin pages.
+
+Public SEO content should be genuinely useful and relevant to marine intelligence.
+
+Private application pages must not be indexed.
+
+Admin pages must not be indexed.
+
+User-specific query/history/evidence content must not be public.
+
+--------------------------------------------------
+4. GEO / AI SEARCH
+--------------------------------------------------
+
+Optimize public content for modern search and AI retrieval using good information architecture rather than hacks.
+
+Clearly explain:
+
+- What ORCA is
+- What marine decision intelligence means
+- What PFZ is
+- What SST is
+- What ocean-state forecasts are
+- How ORCA uses marine data
+- How ORCA performs spatial reasoning
+- How ORCA handles uncertainty
+- Why deterministic analysis is used
+- What ORCA cannot guarantee.
+
+Put direct explanations near the beginning of pages.
+
+Use authoritative references.
+
+Use explicit entities, dates and source attribution.
+
+Use structured data only when it accurately represents visible content.
+
+Do not create hundreds of programmatic SEO pages.
+
+--------------------------------------------------
+5. FOOTER + LEGAL
+--------------------------------------------------
+
+Audit the footer thoroughly.
+
+Make sure every important footer link works.
+
+Cover, where applicable:
+
+- Privacy
+- Terms
+- Cookies
+- Acceptable Use
+- AI Transparency
+- Safety / Disclaimer
+- Security
+- Accessibility
+- Vulnerability Disclosure
+- Data Processing
+- Data Retention
+- Data Deletion
+- Subprocessors
+- Third-Party Licenses
+- Copyright
+- Contact
+- Support
+- Privacy contact
+- Security contact
+- Complaint / grievance route
+- System status.
+
+Do not create legal pages just for appearance.
+
+Every legal page needs useful, coherent content plus:
+
+- version
+- effective date
+- last updated date
+- scope/jurisdiction where relevant.
+
+Do not make unsupported compliance claims.
+
+--------------------------------------------------
+6. COMPLIANCE FOUNDATION
+--------------------------------------------------
+
+Do not pretend that ORCA is universally compliant.
+
+Instead make the architecture jurisdiction-aware.
+
+Review the current implementation for its ability to support applicable requirements relating to:
+
+India:
+- DPDP framework
+- applicable DPDP Rules
+- applicable CERT-In obligations
+- consumer/data requirements
+- data-provider contractual restrictions.
+
+EU/EEA:
+- GDPR
+- ePrivacy/cookies where applicable
+- EU AI Act transparency requirements where applicable
+- accessibility requirements where applicable.
+
+UK:
+- UK GDPR
+- PECR
+- applicable privacy/accessibility requirements.
+
+US:
+- applicable state privacy requirements, particularly where California or other state laws apply.
+
+Other international jurisdictions should be handled through a jurisdiction-aware architecture rather than a fake universal compliance switch.
+
+Implement the technical foundations that are missing:
+
+- consent records
+- privacy preferences
+- cookie preferences
+- data deletion
+- data export where applicable
+- retention controls
+- audit logs
+- AI disclosure
+- regional policy handling.
+
+Do not claim certification.
+
+--------------------------------------------------
+7. SECURITY
+--------------------------------------------------
+
+Perform a security audit of the existing code.
+
+Check:
+
+- authentication
+- authorization
+- RBAC
+- IDOR
+- privilege escalation
+- session handling
+- secure cookies
+- password handling
+- CSRF where applicable
+- XSS
+- SQL injection
+- SSRF
+- path traversal
+- file validation
+- request limits
+- rate limiting
+- CORS
+- security headers
+- secret exposure
+- API key exposure
+- error leakage
+- logging leakage.
+
+OPENAI/API credentials must remain server-side.
+
+Never expose secrets to the browser.
+
+Do not trust client-side authorization.
+
+--------------------------------------------------
+8. DATA INTEGRITY
+--------------------------------------------------
+
+Inspect every place where marine data enters the system.
+
+Ensure the system never invents:
+
+- measurements
+- coordinates
+- timestamps
+- warnings
+- source freshness
+- PFZ values
+- risk values.
+
+Every important observation should retain appropriate:
+
+- source
+- dataset
+- value
+- unit
+- observed_at
+- valid_at
+- retrieved_at
+- geometry
+- quality
+- product/version metadata.
+
+If a provider is unavailable, expose an honest unavailable/stale state.
+
+Do not replace missing real data with synthetic data.
+
+--------------------------------------------------
+9. AI / DETERMINISTIC BOUNDARY
+--------------------------------------------------
+
+Verify that the LLM is not responsible for:
+
+- distances
+- geometry
+- polygon intersection
+- geofencing
+- numerical aggregation
+- risk scoring
+- source freshness
+- authoritative warning decisions.
+
+LLM responsibilities should remain:
+
+- intent
+- context extraction
+- planning
+- tool selection
+- explanation
+- summarization
+- multilingual interaction.
+
+Deterministic code owns numerical/spatial decisions.
+
+--------------------------------------------------
+10. EVIDENCE
+--------------------------------------------------
+
+Audit the evidence implementation.
+
+Every significant recommendation must be traceable to:
+
+Claim
+→ Observation
+→ Source
+→ Time
+→ Location
+→ Transformation
+→ Decision contribution.
+
+Evidence must be inspectable by users.
+
+Do not expose chain-of-thought.
+
+Expose concise operational provenance only.
+
+--------------------------------------------------
+11. ERROR / FAILURE UX
+--------------------------------------------------
+
+Make failure handling excellent.
+
+Support real states:
+
+- loading
+- processing
+- partial
+- stale
+- unavailable
+- failed
+- requires input
+- insufficient evidence
+- abstained
+- retrying.
+
+Never use generic "Something went wrong" where more useful information is available.
+
+Never fake progress.
+
+Progress indicators must correspond to real operations.
+
+--------------------------------------------------
+12. UX POLISH
+--------------------------------------------------
+
+Now improve the existing interface visually without redesigning the product unnecessarily.
+
+Make it feel like a professional modern geospatial intelligence application.
+
+Use excellent:
+
+- page transitions
+- component transitions
+- map interactions
+- evidence expansion
+- result transitions
+- route visualization
+- loading skeletons
+- hover/focus states
+- dialogs/drawers
+- filtering interactions
+- success/error feedback
+- progressive disclosure.
+
+Motion should communicate state and hierarchy.
+
+Avoid:
+
+- excessive neon
+- pointless gradients
+- excessive glass effects
+- giant decorative cards
+- fake AI animation
+- unnecessary 3D
+- distracting motion.
+
+Respect prefers-reduced-motion.
+
+Do not let animation delay access to important safety information.
+
+--------------------------------------------------
+13. INTERACTIVE DATA EXPERIENCE
+--------------------------------------------------
+
+Make the important ORCA differentiators interactive.
+
+Risk factors should be inspectable.
+
+Evidence should expand into:
+
+Source
+→ Observation
+→ Time
+→ Spatial match
+→ Rule
+→ Decision.
+
+Map features should expose relevant source/timestamp metadata.
+
+Query execution should reflect actual backend state.
+
+Use smooth transitions where they improve comprehension.
+
+--------------------------------------------------
+14. ACCESSIBILITY
+--------------------------------------------------
+
+Audit against WCAG 2.2 AA expectations.
+
+Fix:
+
+- keyboard navigation
+- focus visibility
+- focus trapping
+- semantic HTML
+- form labels
+- screen-reader labels
+- dialog accessibility
+- heading structure
+- color contrast
+- color-only status indicators
+- map accessibility
+- reduced motion
+- responsive text
+- error messaging
+- interactive control naming.
+
+Do not add unnecessary ARIA when semantic HTML is sufficient.
+
+--------------------------------------------------
+15. PERFORMANCE
+--------------------------------------------------
+
+Inspect bundle and runtime performance.
+
+Improve:
+
+- unnecessary client components
+- unnecessary dependencies
+- large bundles
+- duplicate data fetching
+- excessive hydration
+- expensive map rendering
+- unnecessary rerenders
+- image loading
+- font loading
+- API waterfalls.
+
+Use server rendering where appropriate.
+
+Keep map-heavy functionality client-side only where interaction actually requires it.
+
+Lazy-load expensive functionality.
+
+Virtualize large tables/lists.
+
+--------------------------------------------------
+16. MOBILE
+--------------------------------------------------
+
+Test the actual application on mobile-sized layouts.
+
+The critical flow must remain usable:
+
+Ask
+→ Result
+→ Map
+→ Why
+→ Evidence.
+
+Do not simply scale the desktop UI down.
+
+--------------------------------------------------
+17. OBSERVABILITY
+--------------------------------------------------
+
+Verify production monitoring exists for:
+
+- request latency
+- errors
+- provider failures
+- AI failures
+- data freshness
+- database errors
+- cache health
+- background jobs
+- authentication/security events.
+
+Do not log secrets.
+
+Do not unnecessarily log personal information.
+
+--------------------------------------------------
+18. REAL PRODUCTION QUALITY
+--------------------------------------------------
+
+Remove any remaining indications that this is a demo.
+
+Do not add fake numbers to make dashboards look populated.
+
+Do not add fake live status.
+
+Do not create fake alerts.
+
+Do not create hard-coded success states.
+
+Do not create fake analytics.
+
+Empty real systems should look intentionally empty rather than artificially populated.
+
+--------------------------------------------------
+19. TESTING
+--------------------------------------------------
+
+Run a serious final QA pass.
+
+At minimum verify:
+
+- production build succeeds
+- all important routes load
+- authentication works
+- authorization works
+- query flow works
+- data retrieval works
+- map works
+- risk calculation works
+- evidence works
+- history works
+- footer links work
+- legal pages load
+- 404 works
+- sitemap works
+- robots works
+- canonical URLs exist
+- metadata exists
+- structured data validates
+- favicon exists
+- no console errors
+- no hydration errors
+- mobile works
+- keyboard navigation works.
+
+Where practical, add automated tests for the critical path.
+
+--------------------------------------------------
+20. DO NOT EXPAND SCOPE
+--------------------------------------------------
+
+Do NOT suddenly implement:
+
+- dozens of new agents
+- custom AI models
+- blockchain
+- autonomous vessel navigation
+- giant analytics systems
+- unnecessary 3D
+- speculative predictive features
+- large secondary dashboards.
+
+Improve what exists first.
+
+--------------------------------------------------
+21. FINAL REVIEW
+--------------------------------------------------
+
+After making changes, review the application from five perspectives:
+
+PRODUCT:
+Does the main workflow clearly solve the marine decision problem?
+
+USER:
+Can a non-technical user understand the result quickly?
+
+JUDGE:
+Can someone understand why ORCA is more than a chatbot?
+
+ENGINEER:
+Can another developer maintain the system?
+
+TRUST/SECURITY:
+Could the system mislead users, leak information or make unsupported claims?
+
+Fix the highest-impact issues you find.
+
+--------------------------------------------------
+FINAL SUCCESS CRITERION
+
+The current application should finish this flow cleanly:
+
+Real user question
+→ intent/context
+→ location/time
+→ real data retrieval
+→ deterministic processing
+→ evidence validation
+→ result
+→ interactive map
+→ evidence inspection
+→ saved result.
+
+The application should feel polished enough for a serious product review while remaining honest about what is actually connected.
+
+Do not optimize for the number of screens.
+
+Optimize for:
+
+REAL FUNCTIONALITY
++
+REAL DATA
++
+DETERMINISTIC CORRECTNESS
++
+EVIDENCE
++
+SECURITY
++
+ACCESSIBILITY
++
+SEO/GEO
++
+PERFORMANCE
++
+EXCELLENT INTERACTION
++
+MAINTAINABLE CODE.
+
+Make the strongest engineering decisions yourself.
+Do not ask for unnecessary configuration.
+Do not rebuild working parts without a reason.
+Inspect first, improve second, verify last.

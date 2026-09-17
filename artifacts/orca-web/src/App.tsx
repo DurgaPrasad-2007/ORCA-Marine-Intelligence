@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ArrowRight, ArrowUpRight, Activity, BookOpen, Check, ChevronDown, CircleDot, Compass, Database, ExternalLink, FileText, FlaskConical, Github, Info, Layers3, LockKeyhole, Mail, Map, Menu, Network, Route as RouteIcon, Search, ShieldCheck, Users, Waves, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -15,6 +15,171 @@ const navItems = [
   { label: 'Technology', href: '/technology' },
   { label: 'Research', href: '/research' },
 ];
+
+const pageMeta: Record<string, { title: string; description: string; type?: string }> = {
+  '/': {
+    title: 'ORCA | Evidence-audited marine decision intelligence',
+    description: 'ORCA turns complex ocean data into spatially grounded decision support with visible evidence, deterministic analysis, and honest uncertainty.',
+    type: 'SoftwareApplication',
+  },
+  '/problem': {
+    title: 'The marine decision problem | ORCA',
+    description: 'Why marine decisions need more than disconnected maps, forecasts, and fluent answers: ORCA keeps place, time, evidence, and uncertainty connected.',
+  },
+  '/how-it-works': {
+    title: 'How ORCA works | Marine reasoning with a paper trail',
+    description: 'See how ORCA moves from a natural-language question to context, spatial reasoning, evidence, and a decision-shaped brief.',
+  },
+  '/technology': {
+    title: 'ORCA technology | AI coordination and deterministic analysis',
+    description: 'ORCA separates language-model coordination from authoritative data, deterministic computation, and evidence so each layer can be inspected.',
+  },
+  '/data-sources': {
+    title: 'Marine data sources | ORCA',
+    description: 'Understand the source families ORCA is designed to work with, including earth observation, models, in-situ observations, and domain knowledge.',
+  },
+  '/science': {
+    title: 'Marine science and uncertainty | ORCA',
+    description: 'Explore how ORCA distinguishes observed, derived, assumed, and uncertain information in marine decision support.',
+  },
+  '/trust': {
+    title: 'Trust and limits | ORCA',
+    description: 'What ORCA can say, what it cannot claim, and why evidence, caveats, and human judgement remain part of the product.',
+  },
+  '/security': {
+    title: 'Security posture | ORCA',
+    description: 'The security principles and current boundaries of the ORCA public prototype, with no live user accounts or decision API behind it.',
+  },
+  '/privacy': {
+    title: 'Privacy notice | ORCA',
+    description: 'A plain-language privacy notice for the ORCA public prototype and its intentionally small data footprint.',
+  },
+  '/terms': {
+    title: 'Terms and limitations | ORCA',
+    description: 'Plain-language terms for using the ORCA public prototype for research discussion, not navigation or safety decisions.',
+  },
+  '/cookies': {
+    title: 'Cookie notice | ORCA',
+    description: 'How the ORCA public prototype handles cookies, local browser state, and future preference controls.',
+  },
+  '/acceptable-use': {
+    title: 'Acceptable use | ORCA',
+    description: 'The intended and out-of-scope uses of the ORCA public prototype and future decision-support service.',
+  },
+  '/ai-transparency': {
+    title: 'AI transparency | ORCA',
+    description: 'How ORCA is designed to use AI for interpretation and explanation while keeping data, calculations, and evidence explicit.',
+  },
+  '/accessibility': {
+    title: 'Accessibility statement | ORCA',
+    description: 'ORCA’s accessibility goals, current public-site support, known limitations, and contact route for barriers.',
+  },
+  '/vulnerability-disclosure': {
+    title: 'Vulnerability disclosure | ORCA',
+    description: 'How to report a suspected security issue in the ORCA public prototype responsibly.',
+  },
+  '/data-retention': {
+    title: 'Data retention | ORCA',
+    description: 'The current retention position for the ORCA public prototype and the controls required before a data service launches.',
+  },
+  '/data-deletion': {
+    title: 'Data deletion | ORCA',
+    description: 'What deletion means for the current ORCA public prototype and how future account data would need to be handled.',
+  },
+  '/subprocessors': {
+    title: 'Subprocessors and providers | ORCA',
+    description: 'The current third-party processing position for ORCA and the disclosure expected before connected services are introduced.',
+  },
+  '/third-party-licenses': {
+    title: 'Third-party licenses | ORCA',
+    description: 'License and attribution information for the software used in the ORCA public prototype.',
+  },
+  '/about': {
+    title: 'About ORCA | Ocean Reasoning & Contextual Advisory',
+    description: 'Meet the research direction behind ORCA, a prototype for evidence-audited marine decision support.',
+  },
+  '/contact': {
+    title: 'Contact ORCA | Marine decision intelligence research',
+    description: 'Share a marine use case, source question, critique, or research idea with the ORCA team.',
+  },
+  '/status': {
+    title: 'Prototype status | ORCA',
+    description: 'See what is and is not connected behind the ORCA public prototype.',
+  },
+  '/methodology': {
+    title: 'ORCA methodology | Evidence, assumptions, and decisions',
+    description: 'The ORCA methodology connects a question to an operation, source, timestamp, caveat, and decision contribution.',
+  },
+  '/research': {
+    title: 'ORCA research agenda | Marine decision support',
+    description: 'The research questions guiding ORCA: making marine reasoning legible, spatially grounded, and useful without overstating precision.',
+  },
+};
+
+function setMeta(attribute: 'name' | 'property', key: string, content: string) {
+  let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
+  if (!element) {
+    element = document.createElement('meta');
+    element.setAttribute(attribute, key);
+    document.head.appendChild(element);
+  }
+  element.content = content;
+}
+
+function PageMeta() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const meta = pageMeta[location] ?? {
+      title: 'Page not found | ORCA',
+      description: 'The requested ORCA page could not be found.',
+    };
+    const canonical = new URL(location, window.location.origin).toString();
+    const isNotFound = !pageMeta[location];
+
+    document.title = meta.title;
+    document.documentElement.lang = 'en';
+    setMeta('name', 'description', meta.description);
+    setMeta('name', 'robots', isNotFound ? 'noindex, follow' : 'index, follow');
+    setMeta('property', 'og:title', meta.title);
+    setMeta('property', 'og:description', meta.description);
+    setMeta('property', 'og:type', 'website');
+    setMeta('property', 'og:url', canonical);
+    setMeta('property', 'og:site_name', 'ORCA');
+    setMeta('name', 'twitter:title', meta.title);
+    setMeta('name', 'twitter:description', meta.description);
+    setMeta('name', 'twitter:card', 'summary');
+
+    let canonicalLink = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.rel = 'canonical';
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.href = canonical;
+
+    const existingSchema = document.head.querySelector<HTMLScriptElement>('#orca-structured-data');
+    existingSchema?.remove();
+    if (meta.type) {
+      const schema = document.createElement('script');
+      schema.id = 'orca-structured-data';
+      schema.type = 'application/ld+json';
+      schema.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': meta.type,
+        name: 'ORCA — Ocean Reasoning & Contextual Advisory',
+        applicationCategory: 'DecisionSupportSystem',
+        description: meta.description,
+        url: canonical,
+        isAccessibleForFree: true,
+        inLanguage: 'en',
+      });
+      document.head.appendChild(schema);
+    }
+  }, [location]);
+
+  return null;
+}
 
 function Mark() {
   return (
@@ -40,12 +205,16 @@ function Header() {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   return (
-    <header className="sticky top-0 z-50 border-b border-[hsl(var(--border))]/80 bg-[hsl(var(--background))]/95 backdrop-blur-md">
+    <>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[hsl(var(--primary))] focus:px-4 focus:py-3 focus:text-sm focus:text-[hsl(var(--primary-foreground))]">
+        Skip to main content
+      </a>
+      <header className="sticky top-0 z-50 border-b border-[hsl(var(--border))]/80 bg-[hsl(var(--background))]/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1280px] items-center justify-between px-5 py-4 lg:px-8">
         <Logo />
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary navigation">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href} data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`} className={`font-mono-ui text-[10px] uppercase tracking-[0.13em] transition-colors hover:text-[hsl(var(--accent))] ${location === item.href ? 'text-[hsl(var(--accent))]' : 'text-[hsl(var(--muted-foreground))]'}`}>
+            <Link key={item.href} href={item.href} aria-current={location === item.href ? 'page' : undefined} data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`} className={`font-mono-ui text-[10px] uppercase tracking-[0.13em] transition-colors hover:text-[hsl(var(--accent))] ${location === item.href ? 'text-[hsl(var(--accent))]' : 'text-[hsl(var(--muted-foreground))]'}`}>
               {item.label}
             </Link>
           ))}
@@ -62,7 +231,7 @@ function Header() {
         <nav id="mobile-navigation" className="border-t border-[hsl(var(--border))] bg-[hsl(var(--background))] px-5 py-4 lg:hidden" aria-label="Mobile navigation">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href} onClick={() => setOpen(false)} data-testid={`link-mobile-${item.label.toLowerCase().replaceAll(' ', '-')}`} className="border-b border-[hsl(var(--border))]/70 py-3 font-mono-ui text-[11px] uppercase tracking-[0.14em] text-[hsl(var(--primary))]">
+              <Link key={item.href} href={item.href} aria-current={location === item.href ? 'page' : undefined} onClick={() => setOpen(false)} data-testid={`link-mobile-${item.label.toLowerCase().replaceAll(' ', '-')}`} className="border-b border-[hsl(var(--border))]/70 py-3 font-mono-ui text-[11px] uppercase tracking-[0.14em] text-[hsl(var(--primary))]">
                 {item.label}
               </Link>
             ))}
@@ -70,7 +239,8 @@ function Header() {
           </div>
         </nav>
       )}
-    </header>
+      </header>
+    </>
   );
 }
 
@@ -99,12 +269,15 @@ function Footer() {
               <Link href="/trust" data-testid="link-footer-trust">Trust & limits</Link>
               <Link href="/security" data-testid="link-footer-security">Security posture</Link>
               <Link href="/privacy" data-testid="link-footer-privacy">Privacy</Link>
+              <Link href="/cookies" data-testid="link-footer-cookies">Cookies</Link>
+              <Link href="/accessibility" data-testid="link-footer-accessibility">Accessibility</Link>
+              <Link href="/ai-transparency" data-testid="link-footer-ai-transparency">AI transparency</Link>
               <Link href="/contact" data-testid="link-footer-contact">Contact ORCA</Link>
             </div>
           </div>
         </div>
         <div className="mt-14 flex flex-col justify-between gap-3 border-t border-[hsl(var(--primary-foreground))]/15 pt-5 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--primary-foreground))]/45 sm:flex-row">
-          <span>© 2026 ORCA research team</span>
+          <span>© 2026 ORCA research team · <Link href="/terms" className="underline underline-offset-4">Terms</Link></span>
           <span>Facts first. Assumptions visible. Decisions traceable.</span>
         </div>
       </div>
@@ -346,12 +519,21 @@ function SecurityPage() {
 }
 
 const legalPages = {
-  '/privacy': { eyebrow: '08 / Privacy', title: 'Privacy should be plain language.', body: 'This prototype website is designed to explain ORCA, not to build a profile of its visitors.', heading: 'A small surface with a small data footprint.', paragraphs: ['The public prototype does not require an account, does not ask for precise location, and has no claim to live ocean data access. If you contact the team, the information you choose to send is used to respond to that message and to understand interest in the research.', 'A future ORCA product would need a specific privacy notice covering user accounts, workspace data, source access, retention, deletion, and any analytics. That notice would be written before those features are introduced.'] },
-  '/terms': { eyebrow: '09 / Terms', title: 'Use this prototype for understanding, not navigation.', body: 'These plain-language terms describe the current public experience and its limits.', heading: 'A research presentation, not an operational service.', paragraphs: ['The content on this website is informational and part of an SIH 2026 prototype. It may include synthetic, static, incomplete, or illustrative examples. It is not a forecast, a navigation instruction, a safety guarantee, or professional, legal, regulatory, or scientific advice.', 'Do not rely on the website to make time-sensitive decisions at sea or in a coastal operation. Verify relevant conditions with qualified professionals and official sources. The prototype is provided for review and research discussion.'] },
+  '/privacy': { eyebrow: '08 / Privacy', title: 'Privacy should be plain language.', body: 'This prototype website is designed to explain ORCA, not to build a profile of its visitors.', heading: 'A small surface with a small data footprint.', paragraphs: ['The public prototype does not require an account, does not ask for precise location, and has no claim to live ocean data access. If you contact the team, the information you choose to send is used to respond to that message and to understand interest in the research.', 'A future ORCA product would need a specific privacy notice covering user accounts, workspace data, source access, retention, deletion, and any analytics. That notice would be written before those features are introduced.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/terms': { eyebrow: '09 / Terms', title: 'Use this prototype for understanding, not navigation.', body: 'These plain-language terms describe the current public experience and its limits.', heading: 'A research presentation, not an operational service.', paragraphs: ['The content on this website is informational and part of an SIH 2026 prototype. It may include synthetic, static, incomplete, or illustrative examples. It is not a forecast, a navigation instruction, a safety guarantee, or professional, legal, regulatory, or scientific advice.', 'Do not rely on the website to make time-sensitive decisions at sea or in a coastal operation. Verify relevant conditions with qualified professionals and official sources. The prototype is provided for review and research discussion.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/cookies': { eyebrow: '09A / Cookies', title: 'A small cookie surface.', body: 'The current public prototype does not use advertising or analytics cookies.', heading: 'No preference wall for a static prototype.', paragraphs: ['The website may use browser capabilities needed for normal navigation, but it does not currently require an account, advertising identifier, or cross-site tracking cookie. The mobile navigation does not persist a profile or location history.', 'If analytics, embedded media, or preference storage is introduced, the site will explain the purpose, provider, retention, and available choices before those tools are enabled.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/acceptable-use': { eyebrow: '09B / Acceptable use', title: 'Use ORCA to question the workflow.', body: 'The prototype is for research, critique, and product discussion.', heading: 'Keep consequential decisions with qualified people.', paragraphs: ['You may use the public site to understand the ORCA concept, discuss marine decision-support workflows, and identify questions for research. Do not represent the prototype as an official government, ISRO, maritime-authority, warning, or navigation service.', 'Do not use illustrative content or synthetic examples to make safety-critical decisions, mislead others about source authority, probe systems you do not own, or submit personal information that the current prototype does not need.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/ai-transparency': { eyebrow: '09C / AI transparency', title: 'AI should explain the work, not invent the evidence.', body: 'ORCA is designed around a visible boundary between language assistance and deterministic analysis.', heading: 'A model is one layer in the workflow.', paragraphs: ['A future ORCA system may use AI to interpret natural-language questions, extract context, coordinate tools, summarize validated evidence, and translate explanations. It should not invent measurements, coordinates, source freshness, warnings, distances, geometry, or risk scores.', 'The public website contains no connected decision model or live marine retrieval. Any future deployment would need documented intended use, evaluation, human oversight, incident handling, and a way to inspect evidence without exposing hidden prompts or chain-of-thought.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/accessibility': { eyebrow: '09D / Accessibility', title: 'A decision-support idea should be readable by the people judging it.', body: 'ORCA aims to follow WCAG 2.2 AA practices across its public experience.', heading: 'Access is part of product quality.', paragraphs: ['The public site uses semantic landmarks, keyboard-visible focus, labeled controls, responsive layouts, non-colour status cues, readable contrast, and reduced-motion support. The content is written to be understandable without access to a map or a live dashboard.', 'This prototype has not been independently certified. If a page, interaction, or document creates a barrier, please describe what happened through the contact route so it can be reviewed.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/vulnerability-disclosure': { eyebrow: '09E / Vulnerability disclosure', title: 'A safe route for reporting security concerns.', body: 'The current ORCA site is a public prototype with no accounts, sensitive data store, or live decision API.', heading: 'Please report suspected vulnerabilities responsibly.', paragraphs: ['Do not attempt to access another person’s data, disrupt availability, or test third-party systems through the public site. Preserve only the minimum evidence needed to explain the issue and avoid sending secrets or personal data.', 'The contact route is currently a project placeholder and is not a monitored security mailbox. Before a connected ORCA service launches, the team should publish a monitored security contact, response expectations, supported versions, and a safe-harbour policy.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/data-retention': { eyebrow: '09F / Data retention', title: 'Retention should follow a purpose.', body: 'The public prototype does not operate an account, query-history, or evidence-storage service.', heading: 'There is no hidden marine history behind this page.', paragraphs: ['The current site does not intentionally retain precise location history, vessel telemetry, query history, or user profiles. A future product would define retention by data class, document source-provider requirements, and provide deletion and export paths where applicable.', 'Retention periods should be reviewed for jurisdiction, purpose, security, source licensing, and operational need instead of using one universal duration.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/data-deletion': { eyebrow: '09G / Data deletion', title: 'Deletion should be a real workflow, not a promise.', body: 'The current public prototype has no user account or stored query workspace to delete.', heading: 'Future deletion controls belong in the product.', paragraphs: ['Because the public site does not create accounts or store a user workspace, there is no current self-service deletion action. If you contact the team, only the information needed to handle that message should be retained for an identified purpose.', 'Before a future account-based product launches, deletion should cover user records, saved analyses, location history, exports, caches, backups, and connected processors according to documented exceptions and legal requirements.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/subprocessors': { eyebrow: '09H / Providers', title: 'No undisclosed processing chain.', body: 'The public prototype does not currently connect to marine providers, analytics vendors, or an AI API.', heading: 'Connected services will be disclosed before they matter.', paragraphs: ['This site presents local content and illustrative diagrams. It does not claim live INCOIS, IMD, ISRO, satellite, mapping, payment, or AI-provider integrations. Source families on the data page are design targets, not current retrievals.', 'If a future service processes personal data or query content through a provider, the provider, purpose, region, data categories, retention, and contractual role should be documented here or in an accompanying processing notice.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/third-party-licenses': { eyebrow: '09I / Licenses', title: 'Attribution belongs in the product.', body: 'The public prototype uses open-source software and should preserve the licenses that make it possible.', heading: 'A short notice for a small prototype.', paragraphs: ['The application is built with open-source web tooling, including React, Vite, Tailwind CSS, Wouter, Lucide icons, and related dependencies. Their respective license texts and notices remain authoritative and should be included in a release inventory before distribution.', 'This page is a product-level summary, not a replacement for the generated dependency license inventory. No proprietary marine-provider code or data is claimed here.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
 };
 
-function LegalPage({ page }: { page: typeof legalPages['/privacy'] }) {
-  return <main><PageIntro eyebrow={page.eyebrow} title={page.title} body={page.body} /><SplitBlock title={page.heading} icon={FileText}><p>{page.paragraphs[0]}</p><p className="mt-5">{page.paragraphs[1]}</p></SplitBlock><section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--secondary))]"><div className="mx-auto max-w-[1280px] px-5 py-12 lg:px-8"><p className="font-mono-ui text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))]">Last reviewed · prototype phase</p><p className="mt-4 max-w-2xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">Questions about this page or the scope of the prototype can be sent through the contact route. We will update these notes as the project gains real integrations.</p></div></section></main>;
+function LegalPage({ page }: { page: (typeof legalPages)[keyof typeof legalPages] }) {
+  return <main><PageIntro eyebrow={page.eyebrow} title={page.title} body={page.body} /><SplitBlock title={page.heading} icon={FileText}><p>{page.paragraphs[0]}</p><p className="mt-5">{page.paragraphs[1]}</p></SplitBlock><section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--secondary))]"><div className="mx-auto max-w-[1280px] px-5 py-12 lg:px-8"><div className="grid gap-4 font-mono-ui text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))] sm:grid-cols-3"><span>Version · {page.version}</span><span>Effective · {page.effective}</span><span>Scope · {page.scope}</span></div><p className="mt-6 max-w-2xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">Last updated 17 September 2026. Questions about this page or the scope of the prototype can be sent through the <Link href="/contact" className="text-[hsl(var(--accent))] underline underline-offset-4">contact route</Link>. These notes will be revised as the project gains real integrations.</p></div></section></main>;
 }
 
 function AboutPage() {
@@ -365,12 +547,11 @@ function ContactPage() {
     event.preventDefault();
     setSent(true);
   }
-  return <main><PageIntro eyebrow="11 / Contact" title="Bring a difficult question." body="We are interested in the real shape of marine decisions: what is asked, what evidence is available, and where current tools leave too much translation to the person." number="ORCA / CONTACT" /><section className="mx-auto grid max-w-[1280px] gap-14 px-5 py-20 lg:grid-cols-[.75fr_1.25fr] lg:px-8 lg:py-28"><div><Label>Research conversations</Label><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[hsl(var(--primary))]">No sales funnel. Just a useful first message.</h2><p className="mt-5 text-sm leading-7 text-[hsl(var(--muted-foreground))]">Share a use case, a source family, a critique, or a question about the prototype. The team currently responds manually.</p><div className="mt-9 flex items-center gap-3 text-sm text-[hsl(var(--primary))]"><Mail size={17} className="text-[hsl(var(--accent))]" /> hello@orca-research.example</div><p className="mt-2 pl-8 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">Example address · not monitored yet</p></div><form onSubmit={submit} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8">{sent ? <div className="flex min-h-[300px] flex-col justify-center"><CircleDot size={23} className="text-[hsl(var(--accent))]" /><h2 className="mt-6 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Message staged.</h2><p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">This prototype does not send email yet, but your message passed the local interaction demo.</p><button type="button" onClick={() => setSent(false)} data-testid="button-contact-reset" className="mt-7 w-fit font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))] underline underline-offset-4">Send another</button></div> : <><div className="grid gap-5 sm:grid-cols-2"><label className="text-sm font-medium text-[hsl(var(--primary))]">Name<input required data-testid="input-contact-name" className="mt-2 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--accent))]" /></label><label className="text-sm font-medium text-[hsl(var(--primary))]">Email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-contact-email" className="mt-2 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--accent))]" /></label></div><label className="mt-5 block text-sm font-medium text-[hsl(var(--primary))]">What are you thinking about?<textarea required data-testid="input-contact-message" rows={6} className="mt-2 w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--accent))]" /></label><button type="submit" data-testid="button-contact-submit" className="group mt-6 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-5 py-3 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--accent))]">Stage the message <ArrowUpRight size={14} /></button></>}</form></section></main>;
+  return <main><PageIntro eyebrow="11 / Contact" title="Bring a difficult question." body="We are interested in the real shape of marine decisions: what is asked, what evidence is available, and where current tools leave too much translation to the person." number="ORCA / CONTACT" /><section className="mx-auto grid max-w-[1280px] gap-14 px-5 py-20 lg:grid-cols-[.75fr_1.25fr] lg:px-8 lg:py-28"><div><Label>Research conversations</Label><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[hsl(var(--primary))]">No sales funnel. Just a useful first message.</h2><p className="mt-5 text-sm leading-7 text-[hsl(var(--muted-foreground))]">Share a use case, a source family, a critique, or a question about the prototype. The team currently responds manually.</p><div className="mt-9 flex items-center gap-3 text-sm text-[hsl(var(--primary))]"><Mail size={17} className="text-[hsl(var(--accent))]" /> hello@orca-research.example</div><p className="mt-2 pl-8 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">Example address · not monitored yet</p></div><form onSubmit={submit} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8"><p className="mb-6 rounded-lg bg-[hsl(var(--secondary))] p-3 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Draft only: this prototype does not send or store messages.</p>{sent ? <div className="flex min-h-[260px] flex-col justify-center"><CircleDot size={23} className="text-[hsl(var(--accent))]" /><h2 className="mt-6 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Nothing was sent.</h2><p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">The form interaction completed locally. No message was transmitted or saved.</p><button type="button" onClick={() => setSent(false)} data-testid="button-contact-reset" className="mt-7 w-fit font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))] underline underline-offset-4">Clear the draft</button></div> : <><div className="grid gap-5 sm:grid-cols-2"><label className="text-sm font-medium text-[hsl(var(--primary))]">Name<input required data-testid="input-contact-name" className="mt-2 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--accent))]" /></label><label className="text-sm font-medium text-[hsl(var(--primary))]">Email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} data-testid="input-contact-email" className="mt-2 w-full rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--accent))]" /></label></div><label className="mt-5 block text-sm font-medium text-[hsl(var(--primary))]">What are you thinking about?<textarea required data-testid="input-contact-message" rows={6} className="mt-2 w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--accent))]" /></label><button type="submit" data-testid="button-contact-submit" className="group mt-6 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-5 py-3 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--accent))]">Review local draft <ArrowUpRight size={14} /></button></>}</form></section></main>;
 }
 
 function StatusPage() {
-  const [checked, setChecked] = useState('just now');
-  return <main><PageIntro eyebrow="12 / Status" title="A clear status for a deliberately small system." body="This page describes the public prototype, not a live operational platform. There are no connected production services behind the ORCA website." number="ORCA / STATUS" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8"><div className="flex flex-col justify-between gap-5 border-b border-[hsl(var(--border))] pb-6 sm:flex-row sm:items-center"><div className="flex items-center gap-3"><span className="h-2.5 w-2.5 rounded-full bg-[#2f8f72]" /><h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-[hsl(var(--primary))]">Public prototype</h2></div><button type="button" onClick={() => setChecked('a moment ago')} data-testid="button-status-refresh" className="inline-flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))]">Refresh check <Activity size={14} /></button></div><div className="grid gap-6 pt-7 sm:grid-cols-3"><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Website</p><p className="mt-2 text-sm text-[#2f8f72]">Operational</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Decision API</p><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Not available</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Last checked</p><p className="mt-2 text-sm text-[hsl(var(--primary))]">{checked}</p></div></div></div></section><section className="bg-[#ebe9df]"><div className="mx-auto max-w-[1280px] px-5 py-16 lg:px-8"><p className="max-w-2xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">If a future MVP introduces connected services, this page will distinguish availability of the website, data access, computation services, and evidence storage instead of flattening them into one green light.</p></div></section></main>;
+  return <main><PageIntro eyebrow="12 / Status" title="A clear status for a deliberately small system." body="This page describes the public prototype, not a live operational platform. There are no connected production services behind the ORCA website." number="ORCA / STATUS" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8"><div className="flex items-center gap-3 border-b border-[hsl(var(--border))] pb-6"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--accent))]" /><h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-[hsl(var(--primary))]">Public prototype · available</h2></div><div className="grid gap-6 pt-7 sm:grid-cols-3"><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Website</p><p className="mt-2 text-sm text-[hsl(var(--primary))]">Static public experience</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Decision API</p><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Not connected</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Marine providers</p><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Not connected</p></div></div></div></section><section className="bg-[#ebe9df]"><div className="mx-auto max-w-[1280px] px-5 py-16 lg:px-8"><p className="max-w-2xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">If a future MVP introduces connected services, this page will report their actual availability, freshness, and failure state. It will not flatten unavailable providers into a green light.</p></div></section></main>;
 }
 
 function MethodologyPage() {
@@ -384,25 +565,29 @@ function ResearchPage() {
 function Router() {
   return (
     <RoutedErrorBoundary>
+      <PageMeta />
       <Header />
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/problem" component={ProblemPage} />
-        <Route path="/how-it-works" component={HowItWorksPage} />
-        <Route path="/technology" component={TechnologyPage} />
-        <Route path="/data-sources" component={DataSourcesPage} />
-        <Route path="/science" component={SciencePage} />
-        <Route path="/trust" component={TrustPage} />
-        <Route path="/security" component={SecurityPage} />
-        <Route path="/privacy"><LegalPage page={legalPages['/privacy']} /></Route>
-        <Route path="/terms"><LegalPage page={legalPages['/terms']} /></Route>
-        <Route path="/about" component={AboutPage} />
-        <Route path="/contact" component={ContactPage} />
-        <Route path="/status" component={StatusPage} />
-        <Route path="/methodology" component={MethodologyPage} />
-        <Route path="/research" component={ResearchPage} />
-        <Route component={NotFound} />
-      </Switch>
+      <div id="main-content" tabIndex={-1}>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/problem" component={ProblemPage} />
+          <Route path="/how-it-works" component={HowItWorksPage} />
+          <Route path="/technology" component={TechnologyPage} />
+          <Route path="/data-sources" component={DataSourcesPage} />
+          <Route path="/science" component={SciencePage} />
+          <Route path="/trust" component={TrustPage} />
+          <Route path="/security" component={SecurityPage} />
+          {Object.entries(legalPages).map(([path, page]) => (
+            <Route key={path} path={path}><LegalPage page={page} /></Route>
+          ))}
+          <Route path="/about" component={AboutPage} />
+          <Route path="/contact" component={ContactPage} />
+          <Route path="/status" component={StatusPage} />
+          <Route path="/methodology" component={MethodologyPage} />
+          <Route path="/research" component={ResearchPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </div>
       <Footer />
     </RoutedErrorBoundary>
   );

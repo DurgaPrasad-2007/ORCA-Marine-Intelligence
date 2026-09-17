@@ -1,0 +1,19 @@
+{
+  "name": "ORCA — Ocean Reasoning & Contextual Advisory",
+  "short_name": "ORCA",
+  "description": "Evidence-audited marine decision intelligence.",
+  "lang": "en",
+  "dir": "ltr",
+  "display": "standalone",
+  "background_color": "#f4f5ed",
+  "theme_color": "#103d42",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
