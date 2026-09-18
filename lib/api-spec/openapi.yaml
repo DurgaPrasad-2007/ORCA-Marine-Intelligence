@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: decision-demo
+    description: Clearly labeled demonstration decision workflows
 paths:
   /healthz:
     get:
@@ -24,6 +26,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /decision-demo/digha:
+    post:
+      operationId: runDighaDecisionDemo
+      tags: [decision-demo]
+      summary: Run the Digha fishing decision demonstration
+      description: Evaluates a static, synthetic fixture so the evidence-first decision workflow can be inspected without implying live marine data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionDemoInput"
+      responses:
+        "200":
+          description: Demonstration decision result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDemoResult"
+        "400":
+          description: Invalid question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +60,151 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    DecisionDemoInput:
+      type: object
+      properties:
+        question:
+          type: string
+          minLength: 12
+          maxLength: 1000
+      required: [question]
+    DecisionContext:
+      type: object
+      properties:
+        location:
+          type: string
+        coordinates:
+          type: string
+        timeWindow:
+          type: string
+        timezone:
+          type: string
+        activity:
+          type: string
+        vessel:
+          type: string
+        extractedFrom:
+          type: string
+      required: [location, coordinates, timeWindow, timezone, activity, vessel, extractedFrom]
+    WorkflowStage:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        status:
+          type: string
+          enum: [fixture, stale, unavailable, derived, assumed]
+        detail:
+          type: string
+        sourceRef:
+          type: ["string", "null"]
+        freshness:
+          type: string
+      required: [id, label, status, detail, sourceRef, freshness]
+    RiskDriver:
+      type: object
+      properties:
+        label:
+          type: string
+        signal:
+          type: string
+        impact:
+          type: string
+        sourceRef:
+          type: string
+      required: [label, signal, impact, sourceRef]
+    EvidenceItem:
+      type: object
+      properties:
+        id:
+          type: string
+        claim:
+          type: string
+        type:
+          type: string
+          enum: [derived, assumed, unavailable, fixture]
+        source:
+          type: string
+        status:
+          type: string
+          enum: [fixture, stale, unavailable, used]
+        timestamp:
+          type: string
+        operation:
+          type: string
+        usedInFinding:
+          type: boolean
+        detail:
+          type: string
+      required: [id, claim, type, source, status, timestamp, operation, usedInFinding, detail]
+    DecisionDemoResult:
+      type: object
+      properties:
+        runId:
+          type: string
+        scenarioLabel:
+          type: string
+        runStatus:
+          type: string
+        generatedAt:
+          type: string
+        context:
+          $ref: "#/components/schemas/DecisionContext"
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowStage"
+        finding:
+          type: string
+        findingQualifier:
+          type: string
+        confidence:
+          type: string
+        confidenceReason:
+          type: string
+        riskDrivers:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskDriver"
+        assumptions:
+          type: array
+          items:
+            type: string
+        limitations:
+          type: array
+          items:
+            type: string
+        mapLabel:
+          type: string
+        mapNote:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceItem"
+      required:
+        - runId
+        - scenarioLabel
+        - runStatus
+        - generatedAt
+        - context
+        - stages
+        - finding
+        - findingQualifier
+        - confidence
+        - confidenceReason
+        - riskDrivers
+        - assumptions
+        - limitations
+        - mapLabel
+        - mapNote
+        - evidence
 

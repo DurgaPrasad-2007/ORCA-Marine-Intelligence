@@ -1,0 +1,1 @@
+- [Evidence-first demo boundary](evidence-first-demo-boundary.md) — never present fixture values as live data; preserve explicit uncertainty and unavailable states.
