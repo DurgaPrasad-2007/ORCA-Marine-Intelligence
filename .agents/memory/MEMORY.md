@@ -1,1 +1,2 @@
 - [Evidence-first demo boundary](evidence-first-demo-boundary.md) — never present fixture values as live data; preserve explicit uncertainty and unavailable states.
+- [Verified public channels](verified-public-channels.md) — publish contact and security routes only after the owner confirms they are monitored.
