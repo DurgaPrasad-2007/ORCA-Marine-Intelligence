@@ -3,7 +3,7 @@ import { RunDighaDecisionDemoBody, RunDighaDecisionDemoResponse } from "@workspa
 
 const router: IRouter = Router();
 
-const demoResult = (question: string) => ({
+export const demoResult = (question: string) => ({
   runId: "digha-fixture-2026-02-14",
   scenarioLabel: "Digha nearshore fishing window · static fixture",
   runStatus: "fixture-complete",

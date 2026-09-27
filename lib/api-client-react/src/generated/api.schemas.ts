@@ -8,6 +8,7 @@
 export interface HealthStatus {
   status: string;
 }
+
 export interface ErrorResponse {
   error: string;
 }
@@ -108,3 +109,11 @@ export interface DecisionDemoResult {
   mapNote: string;
   evidence: EvidenceItem[];
 }
+
+export interface SavedDecision {
+  id: number;
+  question: string;
+  createdAt: string;
+  result: DecisionDemoResult;
+}
+

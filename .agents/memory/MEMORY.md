@@ -1,2 +1,3 @@
 - [Evidence-first demo boundary](evidence-first-demo-boundary.md) — never present fixture values as live data; preserve explicit uncertainty and unavailable states.
 - [Verified public channels](verified-public-channels.md) — publish contact and security routes only after the owner confirms they are monitored.
+- [MVP setup quirks](mvp-setup-quirks.md) — target workspace packages explicitly and account for Drizzle identity columns in insert schemas.

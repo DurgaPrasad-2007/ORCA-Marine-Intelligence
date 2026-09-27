@@ -23,24 +23,24 @@ ORCA turns complex marine data into evidence-backed decisions through natural-la
 ## Where things live
 
 - `artifacts/orca-web/` — public ORCA website and public-content routes.
-- `artifacts/api-server/` — shared API service reserved for the later dashboard/MVP workflow.
+- `artifacts/api-server/` — shared API service for health, the public fixture, Clerk-protected decision runs, and PostgreSQL persistence.
 - `lib/api-spec/openapi.yaml` — source of truth for future versioned API contracts.
 - `attached_assets/` — source specification and project reference files.
 
 ## Architecture decisions
 
-- The first delivery is the public website and educational/trust surface; the operational query dashboard follows as a separate MVP phase.
+- The public website and the authenticated Digha MVP share one ORCA surface; public pages explain the boundaries and the workspace stores user-owned decision runs.
 - Public content is local and route-based for now so the prototype remains reliable without external data providers.
 - ORCA uses explicit prototype language and distinguishes synthetic/demo examples from live or authoritative data.
 - The product story centers on evidence-first decision support: AI coordinates and explains, while validated data and deterministic software decide.
 
 ## Product
 
-The public website explains ORCA's problem, workflow, technology, data-source model, marine-science context, trust boundaries, security posture, privacy approach, terms, methodology, research agenda, and prototype status. It prepares users for the later Digha demonstration flow: natural-language question → location/time context → marine evidence → deterministic risk → map → auditable result.
+The public website explains ORCA's problem, workflow, technology, data-source model, marine-science context, trust boundaries, security posture, privacy approach, terms, methodology, research agenda, and prototype status. The authenticated workspace now runs the Digha flow end to end: natural-language question → location/time context → marine evidence fixture → deterministic risk → map → auditable saved result.
 
 ## User preferences
 
-- Build the full public website, landing pages, documentation, and compliance-oriented content before implementing the operational MVP.
+- Keep public trust content and the authenticated workspace aligned; never let a saved fixture run look like live marine data.
 
 ## Gotchas
 

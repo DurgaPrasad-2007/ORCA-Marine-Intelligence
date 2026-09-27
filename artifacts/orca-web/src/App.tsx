@@ -1,14 +1,80 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { ClerkProvider, Show, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { shadcn } from '@clerk/themes';
 import { ArrowRight, ArrowUpRight, Activity, AlertTriangle, BookOpen, Check, ChevronDown, CircleDot, Clipboard, Compass, Database, ExternalLink, FileText, FlaskConical, Github, Info, Layers3, LockKeyhole, Mail, Map, Menu, Network, Route as RouteIcon, Search, ShieldCheck, SlidersHorizontal, Users, Waves, X } from 'lucide-react';
-import { useRunDighaDecisionDemo, type DecisionDemoResult } from '@workspace/api-client-react';
+import { getListDecisionRunsQueryKey, useCreateDighaDecisionRun, useListDecisionRuns, useRunDighaDecisionDemo, type DecisionDemoResult } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Link, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
+import { Link, Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 
 const queryClient = new QueryClient();
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+function stripBase(path: string) {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length) || '/'
+    : path;
+}
+
+const clerkAppearance = {
+  theme: shadcn,
+  cssLayerName: 'clerk',
+  options: {
+    logoPlacement: 'inside' as const,
+    logoLinkUrl: basePath || '/',
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    socialButtonsPlacement: 'top' as const,
+    socialButtonsVariant: 'blockButton' as const,
+  },
+  variables: {
+    colorPrimary: '#e0715c',
+    colorForeground: '#123c43',
+    colorMutedForeground: '#557276',
+    colorBackground: '#fbfaf4',
+    colorInput: '#f4f1e8',
+    colorInputForeground: '#123c43',
+    colorDanger: '#b84235',
+    colorNeutral: '#b9cfca',
+    fontFamily: 'DM Sans, ui-sans-serif, sans-serif',
+    borderRadius: '0.75rem',
+  },
+  elements: {
+    rootBox: 'w-full flex justify-center',
+    cardBox: 'bg-[#fbfaf4] rounded-2xl w-[440px] max-w-full overflow-hidden border border-[#b9cfca]',
+    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    headerTitle: 'text-[#123c43] font-semibold',
+    headerSubtitle: 'text-[#557276]',
+    socialButtonsBlockButtonText: 'text-[#123c43] font-medium',
+    formFieldLabel: 'text-[#123c43]',
+    footerActionLink: 'text-[#e0715c] font-medium',
+    footerActionText: 'text-[#557276]',
+    dividerText: 'text-[#557276]',
+    identityPreviewEditButton: 'text-[#e0715c]',
+    formFieldSuccessText: 'text-[#28786e]',
+    alertText: 'text-[#b84235]',
+    logoBox: 'h-10',
+    logoImage: 'h-10 w-10',
+    socialButtonsBlockButton: 'border-[#b9cfca] bg-[#f4f1e8] hover:bg-[#ebe9df]',
+    formButtonPrimary: 'bg-[#123c43] hover:bg-[#e0715c] text-[#fbfaf4]',
+    formFieldInput: 'border-[#b9cfca] bg-[#f4f1e8] text-[#123c43]',
+    footerAction: 'border-t border-[#b9cfca]',
+    dividerLine: 'bg-[#b9cfca]',
+    alert: 'border-[#e0715c]/40 bg-[#ebe9df]',
+    otpCodeFieldInput: 'border-[#b9cfca] bg-[#f4f1e8] text-[#123c43]',
+    formFieldRow: 'text-[#123c43]',
+    main: 'bg-transparent',
+  },
+};
 const CONTACT_EMAIL = 'polojudurgaprasad@gmail.com';
 const SECURITY_EMAIL = 'polojudurgaprasad@gmail.com';
 const PRIVACY_OWNER = 'Karma Coder';
@@ -122,6 +188,18 @@ const pageMeta: Record<string, { title: string; description: string; type?: stri
     title: 'ORCA research agenda | Marine decision support',
     description: 'The research questions guiding ORCA: making marine reasoning legible, spatially grounded, and useful without overstating precision.',
   },
+  '/workspace': {
+    title: 'ORCA workspace | Digha decision runs',
+    description: 'Run and review saved ORCA Digha decision-support analyses with evidence and uncertainty kept visible.',
+  },
+  '/sign-in': {
+    title: 'Sign in | ORCA',
+    description: 'Sign in to your ORCA workspace.',
+  },
+  '/sign-up': {
+    title: 'Create an account | ORCA',
+    description: 'Create an ORCA account to save decision-support runs.',
+  },
 };
 
 function setMeta(attribute: 'name' | 'property', key: string, content: string) {
@@ -229,6 +307,7 @@ function Header() {
           <Link href="/contact" data-testid="link-header-contact" className="group inline-flex items-center gap-2 rounded-full border border-[hsl(var(--primary))] px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))] hover:text-[hsl(var(--primary-foreground))]">
             Talk to the team <ArrowUpRight size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
+          <AuthControls />
         </nav>
         <button type="button" aria-expanded={open} aria-controls="mobile-navigation" data-testid="button-mobile-menu" onClick={() => setOpen(!open)} className="rounded-md p-2 text-[hsl(var(--primary))] lg:hidden">
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -244,10 +323,27 @@ function Header() {
               </Link>
             ))}
             <Link href="/contact" onClick={() => setOpen(false)} data-testid="link-mobile-contact" className="mt-3 inline-flex w-fit items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--primary-foreground))]">Talk to the team <ArrowUpRight size={13} /></Link>
+            <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[hsl(var(--border))] pt-4"><AuthControls /></div>
           </div>
         </nav>
       )}
       </header>
+    </>
+  );
+}
+
+function AuthControls() {
+  const { signOut } = useClerk();
+  return (
+    <>
+      <Show when="signed-out">
+        <Link href="/sign-in" data-testid="link-header-sign-in" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary))] transition-colors hover:text-[hsl(var(--accent))]">Sign in</Link>
+        <Link href="/sign-up" data-testid="link-header-sign-up" className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--accent))]">Create account <ArrowUpRight size={13} /></Link>
+      </Show>
+      <Show when="signed-in">
+        <Link href="/workspace" data-testid="link-header-workspace" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))]">Workspace</Link>
+        <button type="button" onClick={() => signOut({ redirectUrl: basePath || '/' })} data-testid="button-header-sign-out" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--accent))]">Sign out</button>
+      </Show>
     </>
   );
 }
@@ -718,6 +814,141 @@ function DighaDemoPage() {
   );
 }
 
+function ProtectedWorkspace() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return <main className="flex min-h-[70vh] items-center justify-center"><Activity className="animate-pulse text-[hsl(var(--accent))]" /></main>;
+  }
+  if (!isSignedIn) {
+    return <Redirect to="/sign-in" />;
+  }
+  return <WorkspacePage />;
+}
+
+function WorkspacePage() {
+  const defaultQuestion = "For a small fishing vessel near Digha, which nearshore window from 12–18 June has better support from the available evidence for surface-current conditions?";
+  const { user } = useUser();
+  const client = useQueryClient();
+  const [question, setQuestion] = useState(defaultQuestion);
+  const [result, setResult] = useState<DecisionDemoResult>();
+  const savedRuns = useListDecisionRuns();
+  const run = useCreateDighaDecisionRun({
+    mutation: {
+      onSuccess: (saved) => {
+        setResult(saved.result);
+        client.invalidateQueries({ queryKey: getListDecisionRunsQueryKey() });
+      },
+    },
+  });
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    run.mutate({ data: { question: question.trim() } });
+  };
+
+  return (
+    <main className="bg-[hsl(var(--background))]">
+      <section className="page-grid border-b border-[hsl(var(--border))]">
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-7 px-5 py-12 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-16">
+          <div className="max-w-3xl">
+            <Label>ORCA / private workspace</Label>
+            <h1 className="mt-5 font-display text-5xl font-semibold leading-[.96] tracking-[-0.065em] text-[hsl(var(--primary))] sm:text-7xl">Your decision trail starts here.</h1>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-[hsl(var(--muted-foreground))]">Run the Digha MVP, keep the question and result attached to your account, and inspect the evidence boundary before treating any finding as useful.</p>
+          </div>
+          <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 lg:w-72">
+            <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">Signed in as</p>
+            <p className="mt-2 truncate text-sm font-semibold text-[hsl(var(--primary))]">{user?.primaryEmailAddress?.emailAddress ?? user?.username ?? 'ORCA user'}</p>
+            <p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Saved runs are private to this account.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1280px] px-5 py-10 lg:px-8 lg:py-16">
+        <div className="grid gap-5 lg:grid-cols-[1.25fr_.75fr]">
+          <form onSubmit={submit} className="rounded-2xl border border-[hsl(var(--primary))]/20 bg-[hsl(var(--card))] p-5 soft-shadow sm:p-7">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="workspace-question" className="font-mono-ui text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--accent))]">01 / Ask a question</label>
+              <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]">Saved on run</span>
+            </div>
+            <textarea id="workspace-question" data-testid="input-workspace-question" value={question} onChange={(event) => setQuestion(event.target.value)} minLength={12} maxLength={1000} rows={5} className="mt-4 w-full resize-y rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-3 text-sm leading-6 text-[hsl(var(--primary))] outline-none transition-colors focus:border-[hsl(var(--accent))]" />
+            <p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">The current MVP uses a clearly labeled Digha fixture. No live marine provider is being represented as connected.</p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button type="submit" data-testid="button-run-workspace" disabled={run.isPending || question.trim().length < 12} className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-5 py-3 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--accent))] disabled:cursor-not-allowed disabled:opacity-45">{run.isPending ? <><Activity size={14} className="animate-pulse" /> Saving run</> : <><ArrowRight size={14} /> Run and save</>}</button>
+              <Link href="/demo/digha" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))]">View public fixture</Link>
+            </div>
+            {run.isError && <p role="alert" className="mt-5 border-t border-[hsl(var(--accent))]/40 pt-4 text-sm text-[hsl(var(--primary))]">The run could not be saved. Check the session and try again.</p>}
+          </form>
+
+          <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--primary))] p-5 text-[hsl(var(--primary-foreground))] sm:p-7">
+            <div className="flex items-start justify-between gap-4"><div><Label>02 / Saved runs</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em]">Your recent trail</h2></div><Database size={22} className="text-[hsl(var(--accent))]" /></div>
+            {savedRuns.isLoading && <p className="mt-8 text-sm text-[hsl(var(--primary-foreground))]/65">Loading your runs…</p>}
+            {savedRuns.isError && <p className="mt-8 text-sm text-[hsl(var(--primary-foreground))]/65">Saved runs are temporarily unavailable.</p>}
+            {!savedRuns.isLoading && !savedRuns.isError && savedRuns.data?.length === 0 && <p className="mt-8 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">No saved runs yet. Run the question to create the first private record.</p>}
+            <div className="mt-7 divide-y divide-[hsl(var(--primary-foreground))]/15">
+              {savedRuns.data?.map((saved) => (
+                <button key={saved.id} type="button" onClick={() => { setQuestion(saved.question); setResult(saved.result); }} className="block w-full py-4 text-left transition-colors first:pt-0 last:pb-0 hover:text-[hsl(var(--accent))]">
+                  <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--primary-foreground))]/50">{new Date(saved.createdAt).toLocaleString()}</span>
+                  <span className="mt-2 block line-clamp-2 text-sm leading-5">{saved.question}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {result ? (
+          <div className="mt-8 space-y-5">
+            <section className="rounded-2xl bg-[hsl(var(--primary))] p-6 text-[hsl(var(--primary-foreground))] sm:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-3"><Label>03 / Finding · directional only</Label><span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--primary-foreground))]/55">Run {result.runId}</span></div>
+              <h2 className="mt-6 max-w-3xl font-display text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl">{result.finding}</h2>
+              <p className="mt-5 max-w-2xl text-sm leading-6 text-[hsl(var(--primary-foreground))]/70">{result.findingQualifier}</p>
+              <div className="mt-7 flex flex-wrap gap-2">{result.evidence.filter((item) => item.usedInFinding).map((item) => <span key={item.id} className="rounded-full border border-[hsl(var(--accent))]/60 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--accent))]">{item.id} · {item.claim}</span>)}</div>
+            </section>
+            <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+              <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7">
+                <Label>04 / Resolved context</Label>
+                <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What the question became</h2>
+                <div className="mt-7 grid gap-4 sm:grid-cols-2">{Object.entries({ Location: result.context.location, Coordinates: result.context.coordinates, "Time window": result.context.timeWindow, Activity: result.context.activity, Vessel: result.context.vessel }).map(([key, value]) => <div key={key} className="border-t border-[hsl(var(--border))] pt-3"><p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">{key}</p><p className="mt-2 text-sm leading-5 text-[hsl(var(--primary))]">{value}</p></div>)}</div>
+              </section>
+              <DemoMap label={result.mapLabel} note={result.mapNote} />
+            </div>
+            <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7">
+              <div className="flex items-start justify-between gap-4"><div><Label>05 / Evidence ledger</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Keep the boundary visible</h2></div><span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]">{result.evidence.length} items</span></div>
+              <div className="mt-7 divide-y divide-[hsl(var(--border))]">{result.evidence.map((item) => <div key={item.id} className="grid gap-2 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-start"><span className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">{item.id}</span><div><h3 className="text-sm font-semibold text-[hsl(var(--primary))]">{item.claim}</h3><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{item.source} · {item.operation}</p></div><DemoStatus value={item.status === 'used' ? 'derived' : item.status} /></div>)}</div>
+            </section>
+            <section className="rounded-2xl border border-[hsl(var(--accent))]/35 bg-[#ebe9df] p-5 sm:p-7"><div className="flex items-start gap-3"><AlertTriangle size={18} className="mt-1 shrink-0 text-[hsl(var(--accent))]" /><div><Label>Limitations</Label><ul className="mt-4 grid gap-2 text-sm leading-6 text-[hsl(var(--muted-foreground))] sm:grid-cols-2">{result.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div></div></section>
+          </div>
+        ) : (
+          <div className="mt-8 rounded-2xl border border-dashed border-[hsl(var(--border))] p-10 text-center"><RouteIcon size={24} className="mx-auto text-[hsl(var(--accent))]" /><h2 className="mt-5 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Your next run will appear here.</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[hsl(var(--muted-foreground))]">The MVP keeps the finding, resolved context, map note, limitations, and evidence ledger together instead of returning an untraceable paragraph.</p></div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function HomeRedirect() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return <main className="flex min-h-[70vh] items-center justify-center"><Activity className="animate-pulse text-[hsl(var(--accent))]" /></main>;
+  }
+  return isSignedIn ? <Redirect to="/workspace" /> : <Home />;
+}
+
+function SignInPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] px-4 py-10">
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    </div>
+  );
+}
+
+function SignUpPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] px-4 py-10">
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    </div>
+  );
+}
+
 function Router() {
   return (
     <RoutedErrorBoundary>
@@ -725,7 +956,10 @@ function Router() {
       <Header />
       <div id="main-content" tabIndex={-1}>
         <Switch>
-          <Route path="/" component={Home} />
+          <Route path="/sign-in/*?" component={SignInPage} />
+          <Route path="/sign-up/*?" component={SignUpPage} />
+          <Route path="/" component={HomeRedirect} />
+          <Route path="/workspace" component={ProtectedWorkspace} />
           <Route path="/problem" component={ProblemPage} />
           <Route path="/how-it-works" component={HowItWorksPage} />
           <Route path="/technology" component={TechnologyPage} />
@@ -755,16 +989,58 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function ClerkQueryClientCacheInvalidator() {
+  const { addListener } = useClerk();
+  const client = useQueryClient();
+  const previousUserId = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    const unsubscribe = addListener(({ user }) => {
+      const userId = user?.id ?? null;
+      if (previousUserId[0] !== undefined && previousUserId[0] !== userId) {
+        client.clear();
+      }
+      previousUserId[1](userId);
+    });
+    return unsubscribe;
+  }, [addListener, client, previousUserId]);
+
+  return null;
+}
+
+function ClerkProviderWithRoutes() {
+  const [, setLocation] = useLocation();
+
+  return (
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      appearance={clerkAppearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      localization={{
+        signIn: { start: { title: 'Welcome back', subtitle: 'Sign in to access your ORCA workspace' } },
+        signUp: { start: { title: 'Create your ORCA account', subtitle: 'Save your decision-support runs' } },
+      }}
+      routerPush={(to) => setLocation(stripBase(to))}
+      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+    >
+      <QueryClientProvider client={queryClient}>
+        <ClerkQueryClientCacheInvalidator />
+        <TooltipProvider>
+          <Router />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
+  );
+}
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <WouterRouter base={basePath}>
+      <ClerkProviderWithRoutes />
+    </WouterRouter>
   );
 }
 

@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: decision-demo
     description: Clearly labeled demonstration decision workflows
+  - name: decision-runs
+    description: Authenticated, user-owned decision runs
 paths:
   /healthz:
     get:
@@ -47,6 +49,56 @@ paths:
                 $ref: "#/components/schemas/DecisionDemoResult"
         "400":
           description: Invalid question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /decision-runs:
+    get:
+      operationId: listDecisionRuns
+      tags: [decision-runs]
+      summary: List the signed-in user's saved decision runs
+      responses:
+        "200":
+          description: Saved decision runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedDecision"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /decision-runs/digha:
+    post:
+      operationId: createDighaDecisionRun
+      tags: [decision-runs]
+      summary: Run and save a Digha decision workflow for the signed-in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionDemoInput"
+      responses:
+        "201":
+          description: Saved decision run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedDecision"
+        "400":
+          description: Invalid question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
           content:
             application/json:
               schema:
@@ -207,4 +259,17 @@ components:
         - mapLabel
         - mapNote
         - evidence
+    SavedDecision:
+      type: object
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        result:
+          $ref: "#/components/schemas/DecisionDemoResult"
+      required: [id, question, createdAt, result]
 

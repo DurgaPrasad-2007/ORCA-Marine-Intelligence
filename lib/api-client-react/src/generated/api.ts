@@ -23,7 +23,8 @@ import type {
   DecisionDemoInput,
   DecisionDemoResult,
   ErrorResponse,
-  HealthStatus
+  HealthStatus,
+  SavedDecision
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -85,6 +86,7 @@ export const getHealthCheckQueryKey = () => {
     `/api/healthz`
     ] as const;
     }
+
 
 export const getHealthCheckQueryOptions = <TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
@@ -218,3 +220,169 @@ export const useRunDighaDecisionDemo = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getRunDighaDecisionDemoMutationOptions(options));
     }
+
+export const getListDecisionRunsUrl = () => {
+
+
+
+
+  return `/api/decision-runs`
+}
+
+/**
+ * @summary List the signed-in user's saved decision runs
+ */
+export const listDecisionRuns = async ( options?: Parameters<typeof customFetch>[1]): Promise<SavedDecision[]> => {
+
+  return customFetch<SavedDecision[]>(getListDecisionRunsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDecisionRunsQueryKey = () => {
+    return [
+    `/api/decision-runs`
+    ] as const;
+    }
+
+
+export const getListDecisionRunsQueryOptions = <TData = Awaited<ReturnType<typeof listDecisionRuns>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDecisionRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDecisionRunsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDecisionRuns>>> = ({ signal }) => listDecisionRuns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDecisionRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDecisionRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listDecisionRuns>>>
+export type ListDecisionRunsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List the signed-in user's saved decision runs
+ */
+
+export function useListDecisionRuns<TData = Awaited<ReturnType<typeof listDecisionRuns>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDecisionRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDecisionRunsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateDighaDecisionRunUrl = () => {
+
+
+
+
+  return `/api/decision-runs/digha`
+}
+
+/**
+ * @summary Run and save a Digha decision workflow for the signed-in user
+ */
+export const createDighaDecisionRun = async (decisionDemoInput: DecisionDemoInput, options?: Parameters<typeof customFetch>[1]): Promise<SavedDecision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SavedDecision>(getCreateDighaDecisionRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(decisionDemoInput)
+  }
+);}
+
+
+
+
+
+export const getCreateDighaDecisionRunMutationKey = () => ['createDighaDecisionRun'] as const;
+
+export const getCreateDighaDecisionRunMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDighaDecisionRun>>, TError,CreateDighaDecisionRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDighaDecisionRun>>, TError,CreateDighaDecisionRunMutationVariables, TContext> => {
+
+const mutationKey = getCreateDighaDecisionRunMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDighaDecisionRun>>, CreateDighaDecisionRunMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDighaDecisionRun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDighaDecisionRunMutationResult = NonNullable<Awaited<ReturnType<typeof createDighaDecisionRun>>>
+    export type CreateDighaDecisionRunMutationBody = BodyType<DecisionDemoInput>
+    export type CreateDighaDecisionRunMutationError = ErrorType<ErrorResponse>
+    export type CreateDighaDecisionRunMutationVariables = {data: BodyType<DecisionDemoInput>}
+
+    /**
+ * @summary Run and save a Digha decision workflow for the signed-in user
+ */
+export const useCreateDighaDecisionRun = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDighaDecisionRun>>, TError,CreateDighaDecisionRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDighaDecisionRun>>,
+        TError,
+        CreateDighaDecisionRunMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateDighaDecisionRunMutationOptions(options));
+    }
+

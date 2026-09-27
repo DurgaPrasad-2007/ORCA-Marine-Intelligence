@@ -16,6 +16,7 @@ export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
 
+
 /**
  * Evaluates a static, synthetic fixture so the evidence-first decision workflow can be inspected without implying live marine data.
  * @summary Run the Digha fishing decision demonstration
@@ -77,3 +78,131 @@ export const RunDighaDecisionDemoResponse = zod.object({
   "detail": zod.string()
 }))
 })
+
+
+/**
+ * @summary List the signed-in user's saved decision runs
+ */
+export const ListDecisionRunsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "question": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "result": zod.object({
+  "runId": zod.string(),
+  "scenarioLabel": zod.string(),
+  "runStatus": zod.string(),
+  "generatedAt": zod.string(),
+  "context": zod.object({
+  "location": zod.string(),
+  "coordinates": zod.string(),
+  "timeWindow": zod.string(),
+  "timezone": zod.string(),
+  "activity": zod.string(),
+  "vessel": zod.string(),
+  "extractedFrom": zod.string()
+}),
+  "stages": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['fixture', 'stale', 'unavailable', 'derived', 'assumed']),
+  "detail": zod.string(),
+  "sourceRef": zod.string().nullable(),
+  "freshness": zod.string()
+})),
+  "finding": zod.string(),
+  "findingQualifier": zod.string(),
+  "confidence": zod.string(),
+  "confidenceReason": zod.string(),
+  "riskDrivers": zod.array(zod.object({
+  "label": zod.string(),
+  "signal": zod.string(),
+  "impact": zod.string(),
+  "sourceRef": zod.string()
+})),
+  "assumptions": zod.array(zod.string()),
+  "limitations": zod.array(zod.string()),
+  "mapLabel": zod.string(),
+  "mapNote": zod.string(),
+  "evidence": zod.array(zod.object({
+  "id": zod.string(),
+  "claim": zod.string(),
+  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture']),
+  "source": zod.string(),
+  "status": zod.enum(['fixture', 'stale', 'unavailable', 'used']),
+  "timestamp": zod.string(),
+  "operation": zod.string(),
+  "usedInFinding": zod.boolean(),
+  "detail": zod.string()
+}))
+})
+})
+export const ListDecisionRunsResponse = zod.array(ListDecisionRunsResponseItem)
+
+
+/**
+ * @summary Run and save a Digha decision workflow for the signed-in user
+ */
+export const createDighaDecisionRunBodyQuestionMin = 12;
+export const createDighaDecisionRunBodyQuestionMax = 1000;
+
+
+
+export const CreateDighaDecisionRunBody = zod.object({
+  "question": zod.string().min(createDighaDecisionRunBodyQuestionMin).max(createDighaDecisionRunBodyQuestionMax)
+})
+
+export const CreateDighaDecisionRunResponse = zod.object({
+  "id": zod.number().int(),
+  "question": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "result": zod.object({
+  "runId": zod.string(),
+  "scenarioLabel": zod.string(),
+  "runStatus": zod.string(),
+  "generatedAt": zod.string(),
+  "context": zod.object({
+  "location": zod.string(),
+  "coordinates": zod.string(),
+  "timeWindow": zod.string(),
+  "timezone": zod.string(),
+  "activity": zod.string(),
+  "vessel": zod.string(),
+  "extractedFrom": zod.string()
+}),
+  "stages": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['fixture', 'stale', 'unavailable', 'derived', 'assumed']),
+  "detail": zod.string(),
+  "sourceRef": zod.string().nullable(),
+  "freshness": zod.string()
+})),
+  "finding": zod.string(),
+  "findingQualifier": zod.string(),
+  "confidence": zod.string(),
+  "confidenceReason": zod.string(),
+  "riskDrivers": zod.array(zod.object({
+  "label": zod.string(),
+  "signal": zod.string(),
+  "impact": zod.string(),
+  "sourceRef": zod.string()
+})),
+  "assumptions": zod.array(zod.string()),
+  "limitations": zod.array(zod.string()),
+  "mapLabel": zod.string(),
+  "mapNote": zod.string(),
+  "evidence": zod.array(zod.object({
+  "id": zod.string(),
+  "claim": zod.string(),
+  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture']),
+  "source": zod.string(),
+  "status": zod.enum(['fixture', 'stale', 'unavailable', 'used']),
+  "timestamp": zod.string(),
+  "operation": zod.string(),
+  "usedInFinding": zod.boolean(),
+  "detail": zod.string()
+}))
+})
+})
+
+

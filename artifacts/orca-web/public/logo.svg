@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title">
+  <title>ORCA</title>
+  <rect width="96" height="96" rx="48" fill="#123c43"/>
+  <circle cx="48" cy="48" r="25" fill="none" stroke="#e0715c" stroke-width="3"/>
+  <circle cx="48" cy="48" r="5" fill="#e0715c"/>
+  <path d="M48 8v80M20 20l56 56" stroke="#e0715c" stroke-opacity=".7" stroke-width="2"/>
+</svg>

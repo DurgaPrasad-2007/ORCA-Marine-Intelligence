@@ -15,5 +15,6 @@ export * from './evidenceItemStatus';
 export * from './evidenceItemType';
 export * from './healthStatus';
 export * from './riskDriver';
+export * from './savedDecision';
 export * from './workflowStage';
 export * from './workflowStageStatus';
