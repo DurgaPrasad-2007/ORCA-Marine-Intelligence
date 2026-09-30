@@ -5,7 +5,7 @@
       "root": "artifacts/api-server",
       "framework": "express",
       "buildCommand": "node build.mjs",
-      "entrypoint": "dist/app.mjs"
+      "entrypoint": "app.mjs"
     },
     "orca-web": {
       "root": "artifacts/orca-web",

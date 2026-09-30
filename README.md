@@ -23,7 +23,7 @@ Other commands: `npm test` (unit tests), `npm run build` then `npm start` (one p
 | Service | Root | Public path | What it is |
 |---|---|---|---|
 | `orca-web` | `artifacts/orca-web` | `/` (everything except `/api`) | Vite/React app, SPA fallback to `index.html` |
-| `api-server` | `artifacts/api-server` | `/api/*` | Express API, entrypoint `dist/app.mjs` (pre-bundled by `node build.mjs`) |
+| `api-server` | `artifacts/api-server` | `/api/*` | Express API. Entrypoint `app.mjs` (committed) re-exports `dist/app.mjs`, which `node build.mjs` bundles at build time |
 
 No bindings are needed: the browser calls `/api/...` on the same domain, and the API calls no other service. Vercel passes the original path to the service, so `/api/chat` reaches Express as `/api/chat`, which is how the routes are mounted.
 
