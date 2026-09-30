@@ -19,11 +19,13 @@ const cdp = (method, params = {}) => new Promise((r) => { const i = ++id; pend.s
 const ev = async (expr) => (await cdp("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true }))?.result?.value;
 await cdp("Runtime.enable"); await cdp("Page.enable");
 await cdp("Page.navigate", { url: `${base}/sign-in` }); await sleep(2500);
-await ev(`document.querySelector('[data-testid="button-guest-access"]').click()`); await sleep(2500);
+await ev(`document.querySelector('[data-testid="button-guest-access"]').click()`);
+for (let i = 0; i < 20 && !(await ev(`location.pathname.startsWith('/app')`)); i++) await sleep(500);
+await sleep(1000);
 await cdp("Page.navigate", { url: `${base}${path}` }); await sleep(4000);
 for (let i = 0; i < 180; i++) { await sleep(1000); if (await ev(`!document.querySelector('[data-testid="button-stop"]')`)) break; }
-await sleep(5000);
+await sleep(Number(process.env.WAIT ?? 7000));
 const shot = await cdp("Page.captureScreenshot", { format: "png" });
 writeFileSync(out, Buffer.from(shot.data, "base64"));
-console.log("saved", out, errors.length ? `errors: ${errors.join("; ")}` : "no page errors");
+console.log("saved", out, "at", await ev("location.pathname"), errors.length ? `errors: ${errors.join("; ")}` : "no page errors");
 ws.close(); proc.kill(); process.exit(0);

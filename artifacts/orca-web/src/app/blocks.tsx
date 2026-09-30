@@ -49,13 +49,13 @@ function Risk({ b }: { b: Block }) {
   );
 }
 
-function AlertList({ alerts }: { alerts: Array<{ title: string; sender: string; published: string; distKm: number; link?: string }> }) {
+function AlertList({ alerts }: { alerts: Array<{ title: string; sender: string; published: string; distKm: number; link?: string; event?: string | null; severity?: string | null; matchedBy?: string }> }) {
   return (
     <ul className="mt-3 space-y-2">
       {alerts.map((a, i) => (
         <li key={i} className="border-l-2 border-[hsl(var(--accent))] pl-3 text-xs leading-5 text-[hsl(var(--primary))]">
-          {a.title}
-          <Mono className="mt-1 normal-case tracking-normal">{a.sender} · {fmtTime(a.published)} · {a.distKm === 0 ? 'inside alert area' : `${a.distKm} km from alert area`}{a.link && <> · <a href={a.link} target="_blank" rel="noreferrer" className="underline underline-offset-2">CAP source</a></>}</Mono>
+          {a.event && <span className="mr-2 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">{a.event}{a.severity ? ` · ${a.severity}` : ''}</span>}{a.title}
+          <Mono className="mt-1 normal-case tracking-normal">{a.sender} · {fmtTime(a.published)} · {a.matchedBy === 'district name' ? 'matched by district name' : a.distKm === 0 ? 'inside alert area' : `${a.distKm} km from alert area`}{a.link && <> · <a href={a.link} target="_blank" rel="noreferrer" className="underline underline-offset-2">CAP source</a></>}</Mono>
         </li>
       ))}
     </ul>

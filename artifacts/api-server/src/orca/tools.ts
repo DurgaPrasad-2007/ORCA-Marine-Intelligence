@@ -181,14 +181,14 @@ export function makeTools(r: Run): ToolDef[] {
         overall: s.risk.overall, window: s.risk.window.label,
         factors: s.risk.factors.map((f) => ({ factor: f.label, value: f.value, level: f.level, threshold: f.threshold, basis: f.basis })),
         best_departure_window: s.best, confidence: s.conf, missing_inputs: s.missing,
-        official_alerts_nearby: s.alerts?.matches.map((a) => ({ title: a.title, issuer: a.sender, published: a.published, distance_km: a.distKm })) ?? null,
+        official_alerts_nearby: s.alerts?.matches.map((a) => ({ title: a.title, hazard_event: a.event, severity: a.severity, urgency: a.urgency, expires: a.expires, issuer: a.sender, published: a.published, matched_by: a.matchedBy, distance_km: a.distKm })) ?? null,
         cyclones: s.cyclones?.slice(0, 3) ?? null,
         nearest_international_boundary: s.nearBoundary ? { name: s.nearBoundary.name, km: s.nearBoundary.km, direction: s.nearBoundary.dir } : null,
         nearest_protected_area: s.nearProtected,
       };
     }),
 
-    def("get_alerts", "Weather", "Official alerts from the NDMA SACHET CAP feed (IMD, INCOIS, state disaster authorities) whose published area contains or lies near a point, plus active tropical cyclones from GDACS. Read the alert text: the feed has no structured hazard type.", z.object({ lat, lon, radius_km: z.number().min(0).max(200).default(25), max_age_hours: z.number().min(1).max(72).default(36) }), async ({ lat, lon, radius_km }) => {
+    def("get_alerts", "Weather", "Official alerts from the NDMA SACHET CAP feed (IMD, INCOIS, state disaster authorities) whose published area contains or lies near a point, plus active tropical cyclones from GDACS. Each alert has its CAP hazard_event, severity, urgency and expiry; read them with the text.", z.object({ lat, lon, radius_km: z.number().min(0).max(200).default(25), max_age_hours: z.number().min(1).max(72).default(36) }), async ({ lat, lon, radius_km }) => {
       const p: LonLat = [lon, lat];
       setLocation(p);
       const [a, c] = await Promise.allSettled([alertsAt(r, p, radius_km), cyclonesNear(p)]);
@@ -199,7 +199,7 @@ export function makeTools(r: Run): ToolDef[] {
       r.blocks.push({ type: "alerts", title: matches.length ? `${matches.length} official alert${matches.length === 1 ? "" : "s"} within ${radius_km} km` : `No official alerts within ${radius_km} km`, alerts: matches.map(({ rings: _r, ...x }) => x), cyclones: events.slice(0, 3), incomplete: a.status === "rejected" ? "CAP feed unavailable" : a.value.unresolved ? `${a.value.unresolved} alert areas could not be fetched` : null });
       if (a.status === "rejected") throw new Error(`Official CAP alert feed unavailable: ${a.reason instanceof Error ? a.reason.message : a.reason}`);
       return {
-        alerts: matches.map((x) => ({ title: x.title, issuer: x.sender, published: x.published, distance_km: x.distKm })),
+        alerts: matches.map((x) => ({ title: x.title, hazard_event: x.event, severity: x.severity, urgency: x.urgency, expires: x.expires, issuer: x.sender, published: x.published, matched_by: x.matchedBy, distance_km: x.distKm })),
         alerts_checked: a.value.considered, alert_areas_unresolved: a.value.unresolved,
         active_cyclones: c.status === "fulfilled" ? events.slice(0, 3).map((e) => ({ name: e.name, alert_level: e.alertLevel, distance_km: e.km })) : "cyclone feed unavailable",
         note: "No lightning-detection feed is connected; thunderstorm risk comes from forecast weather codes and alert text.",

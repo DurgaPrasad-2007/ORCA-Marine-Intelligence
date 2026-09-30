@@ -49,7 +49,7 @@ There is no regex intent detection and no canned answer anywhere. Intent, langua
 | Source | Use | Notes |
 |---|---|---|
 | INCOIS GeoServer PFZ | Potential Fishing Zone lines | WFS returns 503; read via WMS GetFeatureInfo sweep (about 200 requests, cached 3 h). Unofficial path. |
-| NDMA SACHET CAP feed | Official alerts (IMD, INCOIS, state authorities) | Matched to a point by the alert's published polygon. No structured hazard type, so the model reads the text. |
+| NDMA SACHET CAP feed | Official alerts (IMD, INCOIS, state authorities) | Full CAP files give hazard event, severity, urgency and expiry. Matched to a point by the alert polygon, or by district name when the NDMA polygon endpoint is blocked (403). |
 | Open-Meteo Marine + Forecast | Waves, swell, current, sea level, wind, gusts, rain, thunder code | Global model blend, hourly, about 3 days. Sea level is a tide proxy. |
 | NOAA CoastWatch ERDDAP | Satellite SST (OISST) and chlorophyll (VIIRS) | About 2 days behind. |
 | GDACS | Active tropical cyclones | |

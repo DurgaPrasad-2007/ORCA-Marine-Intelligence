@@ -37,6 +37,8 @@ test("NDMA CAP: alerts parse and polygons resolve for some", { timeout: 120_000 
   assert.ok(items.length > 0 && items.every((a) => a.id && a.title));
   const r = await alertsNear(items, [77.6, 12.97], 500, 72);
   assert.ok(r.considered > 0);
+  assert.ok(r.unresolved < r.considered, `all ${r.considered} alert areas unresolved: neither polygons nor district names worked`);
+  assert.ok(r.matches.every((m) => m.matchedBy === "alert polygon" || m.matchedBy === "district name"));
 });
 
 test("NOAA ERDDAP: satellite SST and chlorophyll near Chennai", { timeout: 120_000 }, async () => {

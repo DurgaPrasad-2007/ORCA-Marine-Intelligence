@@ -86,7 +86,7 @@ function AlertsFeed() {
   const rows = (feed.data?.alerts ?? []).filter((a) => (filter === 'all' || a.sender === filter) && (!text || a.title.toLowerCase().includes(text.toLowerCase())));
   return (
     <div>
-      <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Every official CAP alert published in the last 36 hours by IMD, INCOIS and state disaster authorities, all India, straight from NDMA SACHET. The feed has no structured hazard type, so read the text; ORCA's agent does the same.</p>
+      <p className="max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Every official CAP alert published in the last 36 hours by IMD, INCOIS and state disaster authorities, all India, straight from NDMA SACHET. Each alert shows its official hazard type and severity where the feed provides them; ORCA's agent reads the same fields.</p>
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Filter by word, e.g. cyclone, Odisha" aria-label="Filter alerts" className={`${inputCls} max-w-xs`} data-testid="input-alert-filter" />
         {['all', ...senders].map((s) => <button key={s} type="button" onClick={() => setFilter(s)} aria-pressed={filter === s} className={`rounded-full border px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[0.1em] ${filter === s ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--accent))]'}`}>{s}</button>)}

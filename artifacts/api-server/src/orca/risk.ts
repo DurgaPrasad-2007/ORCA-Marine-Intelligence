@@ -71,7 +71,7 @@ export function assess(
     factors.push({ key: "cyclone", label: "Tropical cyclone proximity", value: extra.cycloneKm === null ? "none active" : `${extra.cycloneKm} km`, level: extra.cycloneKm === null ? "ok" : lvl(-extra.cycloneKm, -T.cycloneKm.caution, -T.cycloneKm.avoid), threshold: "caution <1000 km, avoid <500 km", basis: "demo threshold", evidence: ["E-GDACS-TC"] });
   if (extra.officialAlerts) {
     const n = extra.officialAlerts.length;
-    // The CAP feed has no structured hazard type, so the tool cannot tell a cyclone alert from a heat alert.
+    // Each alert carries a CAP hazard event and severity, but which events matter at sea is a judgement for the agent.
     // Any alert near the point raises caution; the agent reads the titles and must say when one is a marine hazard.
     factors.push({ key: "official", label: "Official CAP alerts within 25 km", value: n ? `${n} active - read the alert text` : "none matched", level: n ? "caution" : "ok", threshold: "any official alert nearby = caution; the alert text decides how serious", basis: "official alert", evidence: ["E-NDMA-CAP"] });
   }

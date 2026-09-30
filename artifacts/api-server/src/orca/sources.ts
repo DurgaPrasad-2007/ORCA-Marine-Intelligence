@@ -241,6 +241,7 @@ export const warmPfz = () => pfzFeatures().catch(() => undefined);
 
 // ---------------------------------------------------------------- NDMA SACHET CAP alerts (official)
 export type CapAlert = { id: string; title: string; sender: string; published: string; link: string };
+export type CapDetail = { event: string; severity: string; urgency: string; certainty: string; expires: string | null; areaDesc: string };
 const CAP_RSS = "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml";
 
 const decode = (s: string) => s.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
@@ -280,9 +281,10 @@ export async function capAlerts() {
 
 // Alert area geometry: CAP items publish a "Polygon URL" (FetchPolygonXMLFile) with lat,lon rings.
 // ponytail: polygons are fetched lazily per alert and cached 6 h; ~20 recent alerts is fine, cache to disk if the feed grows.
+let polygonBlockedUntil = 0; // the polygon sub-endpoint can answer 403 while the feed itself is fine; do not hammer it
 export async function alertRings(alertId: string): Promise<LonLat[][] | null> {
   const identifier = alertId.replace(/\D/g, "");
-  if (!identifier) return null;
+  if (!identifier || Date.now() < polygonBlockedUntil) return null;
   const url = `https://sachet.ndma.gov.in/cap_public_website/FetchPolygonXMLFile?identifier=${identifier}`;
   try {
     const xml = await cached(url, 6 * 3.6e6, () => fetchText(url, { timeoutMs: 20_000 }));
@@ -290,6 +292,35 @@ export async function alertRings(alertId: string): Promise<LonLat[][] | null> {
       m[1]!.trim().split(/\s+/).map((pair) => pair.split(",").map(Number) as [number, number]).filter((c) => c.length === 2 && Number.isFinite(c[0]) && Number.isFinite(c[1])).map(([lat, lon]) => [lon, lat] as LonLat),
     ).filter((r) => r.length >= 3);
     return rings.length ? rings : null;
+  } catch (err) {
+    if (/HTTP 403/.test(err instanceof Error ? err.message : "")) polygonBlockedUntil = Date.now() + 10 * 60_000;
+    return null;
+  }
+}
+
+/** Structured hazard fields from the full CAP 1.2 file (event, severity, urgency, expiry, area names). */
+export async function capDetail(alertId: string): Promise<CapDetail | null> {
+  const identifier = alertId.replace(/\D/g, "");
+  if (!identifier) return null;
+  const url = `https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=${identifier}`;
+  try {
+    const xml = await cached(url, 6 * 3.6e6, () => fetchText(url, { timeoutMs: 20_000 }));
+    const info = xml.split("<cap:info>")[1] ?? "";
+    const tag = (t: string) => decode(info.match(new RegExp(`<cap:${t}>([^<]*)</cap:${t}>`))?.[1] ?? "");
+    return { event: tag("event"), severity: tag("severity"), urgency: tag("urgency"), certainty: tag("certainty"), expires: tag("expires") || null, areaDesc: tag("areaDesc") };
+  } catch {
+    return null;
+  }
+}
+
+/** District / county / town names around a point (Nominatim, cached). Null over open sea. Used only to match published area names. */
+async function areaNames(p: LonLat): Promise<string[] | null> {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&addressdetails=1&lat=${p[1].toFixed(3)}&lon=${p[0].toFixed(3)}`;
+  try {
+    const r = await cached(url, 7 * 24 * 3.6e6, () => fetchJson<{ address?: Record<string, string> }>(url, { headers: { "User-Agent": "orca-marine-intelligence/1.0 (ISRO SIH 2026 prototype)" } }));
+    const a = r.address ?? {};
+    const names = [a["state_district"], a["county"], a["city"], a["town"]].filter((x): x is string => Boolean(x)).map((x) => x.replace(/ district$/i, "").trim()).filter((x) => x.length >= 4);
+    return names.length ? names : null;
   } catch {
     return null;
   }
@@ -301,19 +332,29 @@ export async function alertsNear(items: CapAlert[], p: LonLat, nearKm = 25, maxA
   const cutoff = Date.now() - maxAgeH * 3.6e6;
   // CWC river-flood alerts are excluded: not marine hazards, and each needs a large polygon download.
   const recent = items.filter((a) => Date.parse(a.published) >= cutoff && a.sender !== "CWC");
+  const names = await areaNames(p);
   const checked = await Promise.all(
     recent.map(async (a) => {
-      const rings = await alertRings(a.id);
-      if (!rings) return "unresolved" as const;
-      let km = Infinity;
-      for (const r of rings) km = Math.min(km, pointInPolygon(p, r) ? 0 : nearestOnLine(p, r).km);
-      return km <= nearKm ? { ...a, distKm: Math.round(km), rings } : null;
+      const [rings, detail] = await Promise.all([alertRings(a.id), capDetail(a.id)]);
+      if (detail?.expires && Date.parse(detail.expires) < Date.now()) return "expired" as const;
+      const extra = { event: detail?.event ?? null, severity: detail?.severity ?? null, urgency: detail?.urgency ?? null, expires: detail?.expires ?? null };
+      if (rings) {
+        let km = Infinity;
+        for (const r of rings) km = Math.min(km, pointInPolygon(p, r) ? 0 : nearestOnLine(p, r).km);
+        return km <= nearKm ? { ...a, ...extra, distKm: Math.round(km), rings, matchedBy: "alert polygon" as const } : null;
+      }
+      // Polygon unavailable: match the point's district name against the alert's published area names.
+      if (detail && names) {
+        const hay = detail.areaDesc.toLowerCase();
+        return names.some((n) => hay.includes(n.toLowerCase())) ? { ...a, ...extra, distKm: 0, rings: undefined, matchedBy: "district name" as const } : null;
+      }
+      return "unresolved" as const;
     }),
   );
   return {
-    matches: checked.filter((a): a is Exclude<typeof a, null | "unresolved"> => a !== null && a !== "unresolved"),
+    matches: checked.filter((a): a is Exclude<typeof a, null | "unresolved" | "expired"> => a !== null && a !== "unresolved" && a !== "expired"),
     unresolved: checked.filter((a) => a === "unresolved").length,
-    considered: recent.length,
+    considered: checked.filter((a) => a !== "expired").length,
   };
 }
 

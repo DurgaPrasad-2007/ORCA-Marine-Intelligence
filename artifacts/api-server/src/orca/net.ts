@@ -65,9 +65,12 @@ export async function fetchText(url: string, init: RequestInit & { timeoutMs?: n
       clearTimeout(t);
     }
   }
-  c.failures++;
   c.lastError = lastErr instanceof Error ? lastErr.message : String(lastErr);
-  if (c.failures >= 3) c.openUntil = Date.now() + 60_000;
+  // A 4xx on one path (say a blocked sub-endpoint) says nothing about the host's health: it must not take the whole host down.
+  if (!/HTTP 4\d\d/.test(c.lastError) || /HTTP 429/.test(c.lastError)) {
+    c.failures++;
+    if (c.failures >= 3) c.openUntil = Date.now() + 60_000;
+  }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
