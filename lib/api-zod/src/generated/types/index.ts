@@ -6,9 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './agentTrace';
 export * from './decisionContext';
 export * from './decisionDemoInput';
 export * from './decisionDemoResult';
+export * from './decisionDemoResultAnalysisMode';
+export * from './decisionMetric';
 export * from './errorResponse';
 export * from './evidenceItem';
 export * from './evidenceItemStatus';
@@ -16,5 +19,6 @@ export * from './evidenceItemType';
 export * from './healthStatus';
 export * from './riskDriver';
 export * from './savedDecision';
+export * from './sourceSummary';
 export * from './workflowStage';
 export * from './workflowStageStatus';

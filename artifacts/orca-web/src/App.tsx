@@ -1,80 +1,25 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { ClerkProvider, Show, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
-import { publishableKeyFromHost } from '@clerk/react/internal';
-import { shadcn } from '@clerk/themes';
+import { type FormEvent, type ReactNode, Suspense, lazy, useEffect, useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ArrowRight, ArrowUpRight, Activity, AlertTriangle, BookOpen, Check, ChevronDown, CircleDot, Clipboard, Compass, Database, ExternalLink, FileText, FlaskConical, Github, Info, Layers3, LockKeyhole, Mail, Map, Menu, Network, Route as RouteIcon, Search, ShieldCheck, SlidersHorizontal, Users, Waves, X } from 'lucide-react';
-import { getListDecisionRunsQueryKey, useCreateDighaDecisionRun, useListDecisionRuns, useRunDighaDecisionDemo, type DecisionDemoResult } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Link, Redirect, Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 
+import { AuthProvider, useAuth } from '@/lib/auth';
+import { AppShell } from '@/app/shell';
+import { SignInPage, SignUpPage } from '@/app/auth-pages';
+const OverviewPage = lazy(() => import('@/app/overview').then((m) => ({ default: m.OverviewPage })));
+const AskPage = lazy(() => import('@/app/ask').then((m) => ({ default: m.AskPage })));
+const ExplorerPage = lazy(() => import('@/app/explorer').then((m) => ({ default: m.ExplorerPage })));
+const WatchPage = lazy(() => import('@/app/watch').then((m) => ({ default: m.WatchPage })));
+const HistoryPage = lazy(() => import('@/app/history-sources-settings').then((m) => ({ default: m.HistoryPage })));
+const SettingsPage = lazy(() => import('@/app/history-sources-settings').then((m) => ({ default: m.SettingsPage })));
+const SourcesPage = lazy(() => import('@/app/history-sources-settings').then((m) => ({ default: m.SourcesPage })));
+import { basePath } from '@/lib/api';
 const queryClient = new QueryClient();
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-function stripBase(path: string) {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || '/'
-    : path;
-}
-
-const clerkAppearance = {
-  theme: shadcn,
-  cssLayerName: 'clerk',
-  options: {
-    logoPlacement: 'inside' as const,
-    logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
-    socialButtonsPlacement: 'top' as const,
-    socialButtonsVariant: 'blockButton' as const,
-  },
-  variables: {
-    colorPrimary: '#e0715c',
-    colorForeground: '#123c43',
-    colorMutedForeground: '#557276',
-    colorBackground: '#fbfaf4',
-    colorInput: '#f4f1e8',
-    colorInputForeground: '#123c43',
-    colorDanger: '#b84235',
-    colorNeutral: '#b9cfca',
-    fontFamily: 'DM Sans, ui-sans-serif, sans-serif',
-    borderRadius: '0.75rem',
-  },
-  elements: {
-    rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-[#fbfaf4] rounded-2xl w-[440px] max-w-full overflow-hidden border border-[#b9cfca]',
-    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-[#123c43] font-semibold',
-    headerSubtitle: 'text-[#557276]',
-    socialButtonsBlockButtonText: 'text-[#123c43] font-medium',
-    formFieldLabel: 'text-[#123c43]',
-    footerActionLink: 'text-[#e0715c] font-medium',
-    footerActionText: 'text-[#557276]',
-    dividerText: 'text-[#557276]',
-    identityPreviewEditButton: 'text-[#e0715c]',
-    formFieldSuccessText: 'text-[#28786e]',
-    alertText: 'text-[#b84235]',
-    logoBox: 'h-10',
-    logoImage: 'h-10 w-10',
-    socialButtonsBlockButton: 'border-[#b9cfca] bg-[#f4f1e8] hover:bg-[#ebe9df]',
-    formButtonPrimary: 'bg-[#123c43] hover:bg-[#e0715c] text-[#fbfaf4]',
-    formFieldInput: 'border-[#b9cfca] bg-[#f4f1e8] text-[#123c43]',
-    footerAction: 'border-t border-[#b9cfca]',
-    dividerLine: 'bg-[#b9cfca]',
-    alert: 'border-[#e0715c]/40 bg-[#ebe9df]',
-    otpCodeFieldInput: 'border-[#b9cfca] bg-[#f4f1e8] text-[#123c43]',
-    formFieldRow: 'text-[#123c43]',
-    main: 'bg-transparent',
-  },
-};
 const CONTACT_EMAIL = 'polojudurgaprasad@gmail.com';
 const SECURITY_EMAIL = 'polojudurgaprasad@gmail.com';
 const PRIVACY_OWNER = 'Karma Coder';
@@ -100,10 +45,6 @@ const pageMeta: Record<string, { title: string; description: string; type?: stri
     title: 'How ORCA works | Marine reasoning with a paper trail',
     description: 'See how ORCA moves from a natural-language question to context, spatial reasoning, evidence, and a decision-shaped brief.',
   },
-  '/demo/digha': {
-    title: 'Digha decision demonstration | ORCA',
-    description: 'Inspect the ORCA evidence-first workflow for a Digha fishing question using clearly labeled synthetic fixtures and explicit uncertainty.',
-  },
   '/technology': {
     title: 'ORCA technology | AI coordination and deterministic analysis',
     description: 'ORCA separates language-model coordination from authoritative data, deterministic computation, and evidence so each layer can be inspected.',
@@ -122,7 +63,7 @@ const pageMeta: Record<string, { title: string; description: string; type?: stri
   },
   '/security': {
     title: 'Security posture | ORCA',
-    description: 'The security principles and current boundaries of the ORCA public prototype, with no live user accounts or operational decision service behind it.',
+    description: 'The security principles and current boundaries of the ORCA public prototype, covering accounts, live data reads and the limits of a prototype.',
   },
   '/privacy': {
     title: 'Privacy notice | ORCA',
@@ -178,7 +119,7 @@ const pageMeta: Record<string, { title: string; description: string; type?: stri
   },
   '/status': {
     title: 'Prototype status | ORCA',
-    description: 'See what is and is not connected behind the ORCA public prototype.',
+    description: 'See which live sources ORCA reads and what is not connected.',
   },
   '/methodology': {
     title: 'ORCA methodology | Evidence, assumptions, and decisions',
@@ -187,10 +128,6 @@ const pageMeta: Record<string, { title: string; description: string; type?: stri
   '/research': {
     title: 'ORCA research agenda | Marine decision support',
     description: 'The research questions guiding ORCA: making marine reasoning legible, spatially grounded, and useful without overstating precision.',
-  },
-  '/workspace': {
-    title: 'ORCA workspace | Digha decision runs',
-    description: 'Run and review saved ORCA Digha decision-support analyses with evidence and uncertainty kept visible.',
   },
   '/sign-in': {
     title: 'Sign in | ORCA',
@@ -216,12 +153,13 @@ function PageMeta() {
   const [location] = useLocation();
 
   useEffect(() => {
-    const meta = pageMeta[location] ?? {
+    const inApp = location.startsWith('/app');
+    const meta = pageMeta[location] ?? (inApp ? { title: 'ORCA workspace', description: 'Your ORCA marine intelligence workspace.' } : {
       title: 'Page not found | ORCA',
       description: 'The requested ORCA page could not be found.',
-    };
+    });
     const canonical = new URL(location, window.location.origin).toString();
-    const isNotFound = !pageMeta[location];
+    const isNotFound = !pageMeta[location] || inApp;
 
     document.title = meta.title;
     document.documentElement.lang = 'en';
@@ -333,17 +271,16 @@ function Header() {
 }
 
 function AuthControls() {
-  const { signOut } = useClerk();
-  return (
+  const { user, signOut } = useAuth();
+  return user ? (
     <>
-      <Show when="signed-out">
-        <Link href="/sign-in" data-testid="link-header-sign-in" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary))] transition-colors hover:text-[hsl(var(--accent))]">Sign in</Link>
-        <Link href="/sign-up" data-testid="link-header-sign-up" className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--accent))]">Create account <ArrowUpRight size={13} /></Link>
-      </Show>
-      <Show when="signed-in">
-        <Link href="/workspace" data-testid="link-header-workspace" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))]">Workspace</Link>
-        <button type="button" onClick={() => signOut({ redirectUrl: basePath || '/' })} data-testid="button-header-sign-out" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--accent))]">Sign out</button>
-      </Show>
+      <Link href="/app" data-testid="link-header-workspace" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))]">Open ORCA</Link>
+      <button type="button" onClick={() => signOut()} data-testid="button-header-sign-out" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--accent))]">Sign out</button>
+    </>
+  ) : (
+    <>
+      <Link href="/sign-in" data-testid="link-header-sign-in" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary))] transition-colors hover:text-[hsl(var(--accent))]">Sign in</Link>
+      <Link href="/sign-up" data-testid="link-header-sign-up" className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--accent))]">Create account <ArrowUpRight size={13} /></Link>
     </>
   );
 }
@@ -485,10 +422,10 @@ function Home() {
               <ButtonLink href="/how-it-works">Follow the reasoning</ButtonLink>
               <ButtonLink href="/methodology" secondary>Read the method</ButtonLink>
             </div>
-             <Link href="/demo/digha" data-testid="link-home-digha-demo" className="mt-5 inline-flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:text-[hsl(var(--primary))]">Open the Digha decision demo <ArrowRight size={14} /></Link>
+             <Link href="/app/ask" data-testid="link-home-ask" className="mt-5 inline-flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:text-[hsl(var(--primary))]">Ask ORCA a real question <ArrowRight size={14} /></Link>
             <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-[hsl(var(--border))] pt-5 font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">
               <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--accent))]" /> Prototype / SIH 2026</span>
-              <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" /> Synthetic demo data</span>
+              <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" /> Live public data</span>
             </div>
           </div>
           <div className="reveal reveal-delay-2 relative">
@@ -556,7 +493,7 @@ function Home() {
 
       <section className="border-y border-[hsl(var(--border))] bg-[#ebe9df]">
         <div className="mx-auto grid max-w-[1280px] gap-8 px-5 py-12 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
-          <div><Label>Prototype boundary</Label><p className="mt-4 max-w-3xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">This public site describes a research prototype. Demonstrations may use synthetic or static examples. ORCA is not a live data service, a navigation system, a safety guarantee, or a substitute for qualified local and regulatory judgment.</p></div>
+          <div><Label>Prototype boundary</Label><p className="mt-4 max-w-3xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">This public site describes a research prototype. ORCA answers from live public sources and says plainly when one is unavailable. It is not an official warning service, a navigation system, a safety guarantee, or a substitute for qualified local and regulatory judgment.</p></div>
           <ButtonLink href="/trust" secondary>Know the limits</ButtonLink>
         </div>
       </section>
@@ -584,11 +521,11 @@ function SplitBlock({ title, children, reverse = false, icon: Icon = Info }: { t
 }
 
 function ProblemPage() {
-  return <main><PageIntro eyebrow="01 / The problem" title="Ocean data is abundant. Decision context is not." body="A satellite pass, a current model, a forecast, and a fisher’s observation can all be useful. The hard part is making their relationship understandable before a decision has to be made." number="ORCA / PROBLEM" /><SplitBlock title="The failure mode is not a lack of intelligence." icon={Waves}><p>Most tools make a person assemble the context themselves. They move between maps, PDFs, dashboards, and messages, translating units and time windows while trying to remember which source said what.</p><p className="mt-5">A fluent answer can make this worse if it hides uncertainty or invents a plausible connection. For consequential ocean questions, confidence without a trail is a liability.</p><div className="mt-8 border-l-2 border-[hsl(var(--accent))] pl-5 text-[hsl(var(--primary))]">ORCA treats the reasoning path as part of the product.</div></SplitBlock><section className="bg-[hsl(var(--primary))]"><div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-20 lg:grid-cols-[.7fr_1.3fr] lg:px-8"><SectionHeading eyebrow="The difference" title="From fluent answer to inspectable brief." body="The system makes a clean separation between what was retrieved, what was calculated, what was inferred, and what remains unknown." light /><div className="grid gap-3 sm:grid-cols-2"><div className="border-t border-[hsl(var(--accent))] pt-4"><p className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">CHATBOT</p><p className="mt-3 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">Optimizes for a coherent response. Provenance can be unclear.</p></div><div className="border-t border-[hsl(var(--accent))] pt-4"><p className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">ORCA</p><p className="mt-3 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">Coordinates tools and sources. The claim, calculation, and caveat stay connected.</p></div></div></div></section><SplitBlock title="The first version is deliberately bounded." icon={ShieldCheck} reverse><p>Our prototype focuses on making the workflow legible, not on pretending to cover every ocean use case. Demonstrations use constrained scenarios and may include synthetic data.</p><p className="mt-5">A future MVP would need source agreements, validated calculations, domain review, operational monitoring, and a clear process for local feedback before it could support real decisions.</p><ButtonLink href="/trust" secondary>Read the boundaries</ButtonLink></SplitBlock></main>;
+  return <main><PageIntro eyebrow="01 / The problem" title="Ocean data is abundant. Decision context is not." body="A satellite pass, a current model, a forecast, and a fisher’s observation can all be useful. The hard part is making their relationship understandable before a decision has to be made." number="ORCA / PROBLEM" /><SplitBlock title="The failure mode is not a lack of intelligence." icon={Waves}><p>Most tools make a person assemble the context themselves. They move between maps, PDFs, dashboards, and messages, translating units and time windows while trying to remember which source said what.</p><p className="mt-5">A fluent answer can make this worse if it hides uncertainty or invents a plausible connection. For consequential ocean questions, confidence without a trail is a liability.</p><div className="mt-8 border-l-2 border-[hsl(var(--accent))] pl-5 text-[hsl(var(--primary))]">ORCA treats the reasoning path as part of the product.</div></SplitBlock><section className="bg-[hsl(var(--primary))]"><div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-20 lg:grid-cols-[.7fr_1.3fr] lg:px-8"><SectionHeading eyebrow="The difference" title="From fluent answer to inspectable brief." body="The system makes a clean separation between what was retrieved, what was calculated, what was inferred, and what remains unknown." light /><div className="grid gap-3 sm:grid-cols-2"><div className="border-t border-[hsl(var(--accent))] pt-4"><p className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">CHATBOT</p><p className="mt-3 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">Optimizes for a coherent response. Provenance can be unclear.</p></div><div className="border-t border-[hsl(var(--accent))] pt-4"><p className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">ORCA</p><p className="mt-3 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">Coordinates tools and sources. The claim, calculation, and caveat stay connected.</p></div></div></div></section><SplitBlock title="The first version is deliberately bounded." icon={ShieldCheck} reverse><p>Our prototype focuses on making the workflow legible, not on pretending to cover every ocean use case. The app answers from live public sources, covers Indian coastal waters only, and states what it cannot check.</p><p className="mt-5">A future MVP would need source agreements, validated calculations, domain review, operational monitoring, and a clear process for local feedback before it could support real decisions.</p><ButtonLink href="/trust" secondary>Read the boundaries</ButtonLink></SplitBlock></main>;
 }
 
 function HowItWorksPage() {
-  return <main><PageIntro eyebrow="02 / How it works" title="Question → context → spatial reasoning → evidence → decision." body="ORCA is a coordinator. It routes natural language into a structured workflow, keeps deterministic operations explicit, and returns a decision-shaped brief with its evidence attached." number="ORCA / LOOP" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-12 lg:grid-cols-[.65fr_1.35fr]"><div><Label>The five handoffs</Label><h2 className="mt-5 max-w-md font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[hsl(var(--primary))]">Every step has a job — and a boundary.</h2><p className="mt-5 max-w-md text-sm leading-7 text-[hsl(var(--muted-foreground))]">Language is useful for asking. It is not a substitute for a coordinate transform, a source timestamp, or a reproducible calculation.</p><div className="mt-7"><ButtonLink href="/demo/digha">Open the Digha decision demo</ButtonLink></div></div><FlowLine /></div></section><section className="bg-[#dbeae2]"><div className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center"><SignalMap compact /><div><Label>Spatial reasoning</Label><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[hsl(var(--primary))]">Location is not decoration.</h2><p className="mt-5 text-sm leading-7 text-[hsl(var(--muted-foreground))]">A route window, a coastal buffer, a habitat polygon, and a point observation imply different operations. ORCA keeps those geometries explicit so a reader can ask: which area, which time, and which layer?</p><div className="mt-7 flex flex-wrap gap-2">{['point / route', 'buffer / region', 'time window', 'units + datum'].map((tag) => <span key={tag} className="rounded-full border border-[hsl(var(--primary))]/20 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--primary))]">{tag}</span>)}</div></div></div></div></section><SplitBlock title="The answer is a brief, not a black box." icon={FileText}><p>A useful output might be a comparison of two windows, a map layer with a source note, or a short operational brief. In each case, the reader can distinguish observed data from derived values and assumptions.</p><p className="mt-5">The exact presentation will evolve through research sessions. The non-negotiable is that a material claim must be traceable.</p><ButtonLink href="/methodology" secondary>Inspect the method</ButtonLink></SplitBlock></main>;
+  return <main><PageIntro eyebrow="02 / How it works" title="Question → context → spatial reasoning → evidence → decision." body="ORCA is a coordinator. It routes natural language into a structured workflow, keeps deterministic operations explicit, and returns a decision-shaped brief with its evidence attached." number="ORCA / LOOP" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-12 lg:grid-cols-[.65fr_1.35fr]"><div><Label>The five handoffs</Label><h2 className="mt-5 max-w-md font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[hsl(var(--primary))]">Every step has a job — and a boundary.</h2><p className="mt-5 max-w-md text-sm leading-7 text-[hsl(var(--muted-foreground))]">Language is useful for asking. It is not a substitute for a coordinate transform, a source timestamp, or a reproducible calculation.</p><div className="mt-7"><ButtonLink href="/app/ask">Ask ORCA a real question</ButtonLink></div></div><FlowLine /></div></section><section className="bg-[#dbeae2]"><div className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center"><SignalMap compact /><div><Label>Spatial reasoning</Label><h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-[hsl(var(--primary))]">Location is not decoration.</h2><p className="mt-5 text-sm leading-7 text-[hsl(var(--muted-foreground))]">A route window, a coastal buffer, a habitat polygon, and a point observation imply different operations. ORCA keeps those geometries explicit so a reader can ask: which area, which time, and which layer?</p><div className="mt-7 flex flex-wrap gap-2">{['point / route', 'buffer / region', 'time window', 'units + datum'].map((tag) => <span key={tag} className="rounded-full border border-[hsl(var(--primary))]/20 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--primary))]">{tag}</span>)}</div></div></div></div></section><SplitBlock title="The answer is a brief, not a black box." icon={FileText}><p>A useful output might be a comparison of two windows, a map layer with a source note, or a short operational brief. In each case, the reader can distinguish observed data from derived values and assumptions.</p><p className="mt-5">The exact presentation will evolve through research sessions. The non-negotiable is that a material claim must be traceable.</p><ButtonLink href="/methodology" secondary>Inspect the method</ButtonLink></SplitBlock></main>;
 }
 
 function TechnologyPage() {
@@ -603,12 +540,13 @@ function TechnologyPage() {
 
 function DataSourcesPage() {
   const sources = [
-    ['Earth observation', 'Imagery and derived products can provide broad spatial context. Coverage, latency, processing level, and licensing must be stated per source.', 'source family / to be validated'],
-    ['Ocean and weather models', 'Model outputs can describe conditions across a grid, but resolution, forecast horizon, assimilation, and uncertainty matter.', 'source family / to be validated'],
-    ['In-situ observations', 'Buoys, vessels, stations, and community reports can ground a view locally, with their own calibration and coverage limits.', 'source family / to be validated'],
-    ['Knowledge and methods', 'Peer-reviewed work, technical notes, and domain protocols can inform interpretation without being mistaken for direct observation.', 'source family / to be validated'],
+    ['Potential Fishing Zones', 'INCOIS advisory lines derived from satellite SST and chlorophyll, read live from the INCOIS GeoServer. Issued about three times a week.', 'live · unofficial access path'],
+    ['Official alerts', 'NDMA SACHET Common Alerting Protocol feed (IMD, INCOIS, state authorities), matched to a point by each alert\u2019s published area.', 'live'],
+    ['Ocean and weather forecast', 'Open-Meteo marine and forecast models: waves, swell, current, sea level, wind, gusts, rain, thunderstorm codes, hourly to about three days.', 'live · global model blend, not INCOIS OSF'],
+    ['Satellite SST and chlorophyll', 'NOAA OISST and VIIRS ocean colour through ERDDAP, about two days behind, with a stated nearest-valid-cell rule.', 'live · lagged'],
+    ['Cyclones, boundaries, protected areas', 'GDACS cyclone events, Marine Regions (VLIZ) international maritime boundaries and 200 NM limit, and UNEP-WCMC WDPA protected areas (partial India coverage).', 'live · WDPA partial'],
   ];
-  return <main><PageIntro eyebrow="04 / Data sources" title="Facts need a name, a timestamp, and a way to be questioned." body="ORCA is designed to work with authoritative and inspectable sources. This prototype names source families rather than claiming live integrations that do not yet exist." number="ORCA / SOURCES" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]"><div className="hidden grid-cols-[.45fr_1.5fr_.8fr] border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))] px-6 py-4 font-mono-ui text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--muted-foreground))] sm:grid"><span>Family</span><span>Why it matters</span><span>Prototype status</span></div>{sources.map(([name, desc, status], i) => <div key={name} className="grid gap-3 border-b border-[hsl(var(--border))] px-6 py-6 last:border-b-0 sm:grid-cols-[.45fr_1.5fr_.8fr] sm:gap-6"><div><span className="font-mono-ui text-[9px] text-[hsl(var(--accent))]">0{i + 1}</span><h2 className="mt-2 font-semibold text-[hsl(var(--primary))]">{name}</h2></div><p className="text-sm leading-6 text-[hsl(var(--muted-foreground))]">{desc}</p><p className="font-mono-ui text-[9px] uppercase leading-5 tracking-[0.1em] text-[hsl(var(--muted-foreground))]">{status}</p></div>)}</div></section><section className="bg-[hsl(var(--primary))]"><div className="mx-auto grid max-w-[1280px] gap-9 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-8"><SectionHeading eyebrow="Source contract" title="If the source cannot be inspected, the claim should be qualified." light /><div className="grid gap-3 sm:grid-cols-2">{['Provenance and attribution', 'Acquisition or observation time', 'Spatial and temporal resolution', 'Processing and transformations', 'Known gaps and uncertainty', 'License and use conditions'].map((item) => <div key={item} className="flex gap-3 border-t border-[hsl(var(--primary-foreground))]/15 pt-3 text-sm text-[hsl(var(--primary-foreground))]/70"><Check size={16} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />{item}</div>)}</div></div></section></main>;
+  return <main><PageIntro eyebrow="04 / Data sources" title="Facts need a name, a timestamp, and a way to be questioned." body="ORCA is designed to work with authoritative and inspectable sources. These are the sources connected today. Each is called live at question time; the app\u2019s Data sources page shows their health right now, and lists what is not connected: lightning detection, restricted and naval zones, complete protected-area coverage, MOSDAC." number="ORCA / SOURCES" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))]"><div className="hidden grid-cols-[.45fr_1.5fr_.8fr] border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))] px-6 py-4 font-mono-ui text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--muted-foreground))] sm:grid"><span>Family</span><span>Why it matters</span><span>Prototype status</span></div>{sources.map(([name, desc, status], i) => <div key={name} className="grid gap-3 border-b border-[hsl(var(--border))] px-6 py-6 last:border-b-0 sm:grid-cols-[.45fr_1.5fr_.8fr] sm:gap-6"><div><span className="font-mono-ui text-[9px] text-[hsl(var(--accent))]">0{i + 1}</span><h2 className="mt-2 font-semibold text-[hsl(var(--primary))]">{name}</h2></div><p className="text-sm leading-6 text-[hsl(var(--muted-foreground))]">{desc}</p><p className="font-mono-ui text-[9px] uppercase leading-5 tracking-[0.1em] text-[hsl(var(--muted-foreground))]">{status}</p></div>)}</div></section><section className="bg-[hsl(var(--primary))]"><div className="mx-auto grid max-w-[1280px] gap-9 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-8"><SectionHeading eyebrow="Source contract" title="If the source cannot be inspected, the claim should be qualified." light /><div className="grid gap-3 sm:grid-cols-2">{['Provenance and attribution', 'Acquisition or observation time', 'Spatial and temporal resolution', 'Processing and transformations', 'Known gaps and uncertainty', 'License and use conditions'].map((item) => <div key={item} className="flex gap-3 border-t border-[hsl(var(--primary-foreground))]/15 pt-3 text-sm text-[hsl(var(--primary-foreground))]/70"><Check size={16} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />{item}</div>)}</div></div></section></main>;
 }
 
 function SciencePage() {
@@ -616,24 +554,24 @@ function SciencePage() {
 }
 
 function TrustPage() {
-  return <main><PageIntro eyebrow="06 / Trust & limits" title="Trust is a relationship with the boundary." body="ORCA should earn confidence by making its constraints legible. A polished interface cannot turn a prototype into a certified operational system." number="ORCA / TRUST" /><section className="mx-auto grid max-w-[1280px] gap-4 px-5 py-20 md:grid-cols-2 lg:px-8 lg:py-28"><div className="rounded-2xl bg-[hsl(var(--primary))] p-8 text-[hsl(var(--primary-foreground))]"><ShieldCheck size={22} className="text-[hsl(var(--accent))]" /><h2 className="mt-16 font-display text-3xl font-semibold tracking-[-0.05em]">What we can say now</h2><ul className="mt-6 space-y-4 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">{['The public experience is a presentation of a SIH 2026 prototype.', 'The reasoning model separates coordination, data, computation, and evidence.', 'Examples may use synthetic or static data and are labeled as such.', 'The team is designing for coastal communities, researchers, and maritime operators.'].map((x) => <li key={x} className="flex gap-3"><Check size={16} className="mt-1 shrink-0 text-[hsl(var(--accent))]" />{x}</li>)}</ul></div><div className="rounded-2xl border border-[hsl(var(--border))] p-8"><Info size={22} className="text-[hsl(var(--accent))]" /><h2 className="mt-16 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What we will not claim</h2><ul className="mt-6 space-y-4 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{['Official approval or endorsement by ISRO or any other institution.', 'Certification, regulatory compliance, or guaranteed safety.', 'Live coverage, operational accuracy, or complete source integration.', 'A replacement for local expertise, official guidance, or qualified judgment.'].map((x) => <li key={x} className="flex gap-3"><X size={16} className="mt-1 shrink-0 text-[hsl(var(--accent))]" />{x}</li>)}</ul></div></section><SplitBlock title="The right to question the output." icon={Search}><p>We want a reader to be able to ask: Where did this come from? What changed? What did the system calculate? What does it not know? Those are product requirements, not support requests.</p><p className="mt-5">If you see a claim that does not meet that standard, <Link href="/contact" className="text-[hsl(var(--accent))] underline underline-offset-4" data-testid="link-trust-contact">tell us about it.</Link></p></SplitBlock></main>;
+  return <main><PageIntro eyebrow="06 / Trust & limits" title="Trust is a relationship with the boundary." body="ORCA should earn confidence by making its constraints legible. A polished interface cannot turn a prototype into a certified operational system." number="ORCA / TRUST" /><section className="mx-auto grid max-w-[1280px] gap-4 px-5 py-20 md:grid-cols-2 lg:px-8 lg:py-28"><div className="rounded-2xl bg-[hsl(var(--primary))] p-8 text-[hsl(var(--primary-foreground))]"><ShieldCheck size={22} className="text-[hsl(var(--accent))]" /><h2 className="mt-16 font-display text-3xl font-semibold tracking-[-0.05em]">What we can say now</h2><ul className="mt-6 space-y-4 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">{['The public experience is a presentation of a SIH 2026 prototype.', 'The reasoning model separates coordination, data, computation, and evidence.', 'Answers use live public sources; anything unavailable, stale or approximated is labeled as such.', 'The team is designing for coastal communities, researchers, and maritime operators.'].map((x) => <li key={x} className="flex gap-3"><Check size={16} className="mt-1 shrink-0 text-[hsl(var(--accent))]" />{x}</li>)}</ul></div><div className="rounded-2xl border border-[hsl(var(--border))] p-8"><Info size={22} className="text-[hsl(var(--accent))]" /><h2 className="mt-16 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What we will not claim</h2><ul className="mt-6 space-y-4 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{['Official approval or endorsement by ISRO or any other institution.', 'Certification, regulatory compliance, or guaranteed safety.', 'Operational accuracy, official warnings, or complete source integration.', 'A replacement for local expertise, official guidance, or qualified judgment.'].map((x) => <li key={x} className="flex gap-3"><X size={16} className="mt-1 shrink-0 text-[hsl(var(--accent))]" />{x}</li>)}</ul></div></section><SplitBlock title="The right to question the output." icon={Search}><p>We want a reader to be able to ask: Where did this come from? What changed? What did the system calculate? What does it not know? Those are product requirements, not support requests.</p><p className="mt-5">If you see a claim that does not meet that standard, <Link href="/contact" className="text-[hsl(var(--accent))] underline underline-offset-4" data-testid="link-trust-contact">tell us about it.</Link></p></SplitBlock></main>;
 }
 
 function SecurityPage() {
-  return <main><PageIntro eyebrow="07 / Security" title="A careful posture before a large promise." body="There is no production ORCA service behind this public prototype. The security page describes the principles that would guide a future MVP, not a certification or completed control set." number="ORCA / SECURITY" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[{ icon: LockKeyhole, title: 'Minimize', text: 'Collect only what a defined workflow needs.' }, { icon: ShieldCheck, title: 'Separate', text: 'Keep identities, source data, and run evidence in clear boundaries.' }, { icon: FileText, title: 'Record', text: 'Maintain a reviewable history of meaningful changes.' }, { icon: Users, title: 'Review', text: 'Make human access and escalation part of the design.' }].map(({ icon: Icon, title, text }) => <div key={title} className="border-t-2 border-[hsl(var(--accent))] pt-5"><Icon size={19} className="text-[hsl(var(--accent))]" /><h2 className="mt-7 font-display text-2xl font-semibold tracking-[-0.04em] text-[hsl(var(--primary))]">{title}</h2><p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{text}</p></div>)}</div></section><section className="bg-[#ebe9df]"><div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-8"><SectionHeading eyebrow="Current state" title="No user accounts. No live data. Demo-only decision endpoint." /><div className="text-sm leading-7 text-[hsl(var(--muted-foreground))]"><p>This website includes a deterministic Digha fixture endpoint for product demonstration. It does not ask for sensitive information, connect to live marine providers, or expose an operational decision service.</p><p className="mt-5">For a future MVP, threat modeling, dependency review, access controls, secrets management, data retention, incident response, and independent review would be required.</p><p className="mt-5">To report a suspected security issue in this public prototype, email <a href={`mailto:${SECURITY_EMAIL}`} className="text-[hsl(var(--primary))] underline underline-offset-4">{SECURITY_EMAIL}</a>. Please do not include secrets or personal data.</p></div></div></section></main>;
+  return <main><PageIntro eyebrow="07 / Security" title="A careful posture before a large promise." body="ORCA is a prototype, not a production service. This page describes what exists today and the principles that would guide a future MVP; it is not a certification or a completed control set." number="ORCA / SECURITY" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[{ icon: LockKeyhole, title: 'Minimize', text: 'Collect only what a defined workflow needs.' }, { icon: ShieldCheck, title: 'Separate', text: 'Keep identities, source data, and run evidence in clear boundaries.' }, { icon: FileText, title: 'Record', text: 'Maintain a reviewable history of meaningful changes.' }, { icon: Users, title: 'Review', text: 'Make human access and escalation part of the design.' }].map(({ icon: Icon, title, text }) => <div key={title} className="border-t-2 border-[hsl(var(--accent))] pt-5"><Icon size={19} className="text-[hsl(var(--accent))]" /><h2 className="mt-7 font-display text-2xl font-semibold tracking-[-0.04em] text-[hsl(var(--primary))]">{title}</h2><p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{text}</p></div>)}</div></section><section className="bg-[#ebe9df]"><div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-8"><SectionHeading eyebrow="Current state" title="Accounts and live reads. No marine data stored." /><div className="text-sm leading-7 text-[hsl(var(--muted-foreground))]"><p>ORCA has email-and-password accounts (passwords hashed with scrypt, httpOnly session cookie), saved locations and conversation history, and it reads live public marine sources. It stores no marine data. Questions are sent to Google\u2019s Gemini model to be interpreted. It is not an operational decision service.</p><p className="mt-5">For a future MVP, threat modeling, dependency review, access controls, secrets management, data retention, incident response, and independent review would be required.</p><p className="mt-5">To report a suspected security issue in this public prototype, email <a href={`mailto:${SECURITY_EMAIL}`} className="text-[hsl(var(--primary))] underline underline-offset-4">{SECURITY_EMAIL}</a>. Please do not include secrets or personal data.</p></div></div></section></main>;
 }
 
 const legalPages = {
-  '/privacy': { eyebrow: '08 / Privacy', title: 'Privacy should be plain language.', body: 'This prototype website is designed to explain ORCA, not to build a profile of its visitors.', heading: 'A small surface with a small data footprint.', paragraphs: ['The public prototype does not require an account, does not ask for precise location, and has no claim to live ocean data access. If you contact the team, the information you choose to send is used to respond to that message and to understand interest in the research.', `Privacy and grievance concerns can be sent to ${CONTACT_EMAIL}. The privacy owner is ${PRIVACY_OWNER}; the team aims to acknowledge messages within 5 business days, although complex matters may take longer.`, 'A future ORCA product would need a specific privacy notice covering user accounts, workspace data, source access, retention, deletion, and any analytics. That notice would be written before those features are introduced.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/terms': { eyebrow: '09 / Terms', title: 'Use this prototype for understanding, not navigation.', body: 'These plain-language terms describe the current public experience and its limits.', heading: 'A research presentation, not an operational service.', paragraphs: ['The content on this website is informational and part of an SIH 2026 prototype. It may include synthetic, static, incomplete, or illustrative examples. It is not a forecast, a navigation instruction, a safety guarantee, or professional, legal, regulatory, or scientific advice.', 'Do not rely on the website to make time-sensitive decisions at sea or in a coastal operation. Verify relevant conditions with qualified professionals and official sources. The prototype is provided for review and research discussion.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/cookies': { eyebrow: '09A / Cookies', title: 'A small cookie surface.', body: 'The current public prototype does not use advertising or analytics cookies.', heading: 'No preference wall for a static prototype.', paragraphs: ['The website may use browser capabilities needed for normal navigation, but it does not currently require an account, advertising identifier, or cross-site tracking cookie. The mobile navigation does not persist a profile or location history.', 'If analytics, embedded media, or preference storage is introduced, the site will explain the purpose, provider, retention, and available choices before those tools are enabled.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/acceptable-use': { eyebrow: '09B / Acceptable use', title: 'Use ORCA to question the workflow.', body: 'The prototype is for research, critique, and product discussion.', heading: 'Keep consequential decisions with qualified people.', paragraphs: ['You may use the public site to understand the ORCA concept, discuss marine decision-support workflows, and identify questions for research. Do not represent the prototype as an official government, ISRO, maritime-authority, warning, or navigation service.', 'Do not use illustrative content or synthetic examples to make safety-critical decisions, mislead others about source authority, probe systems you do not own, or submit personal information that the current prototype does not need.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/ai-transparency': { eyebrow: '09C / AI transparency', title: 'AI should explain the work, not invent the evidence.', body: 'ORCA is designed around a visible boundary between language assistance and deterministic analysis.', heading: 'A model is one layer in the workflow.', paragraphs: ['A future ORCA system may use AI to interpret natural-language questions, extract context, coordinate tools, summarize validated evidence, and translate explanations. It should not invent measurements, coordinates, source freshness, warnings, distances, geometry, or risk scores.', 'The public website contains no connected decision model or live marine retrieval. Any future deployment would need documented intended use, evaluation, human oversight, incident handling, and a way to inspect evidence without exposing hidden prompts or chain-of-thought.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/privacy': { eyebrow: '08 / Privacy', title: 'Privacy should be plain language.', body: 'This prototype website is designed to explain ORCA, not to build a profile of its visitors.', heading: 'A small surface with a small data footprint.', paragraphs: ['The public pages need no account. The ORCA app asks you to sign in and stores your account, saved locations and conversations. Questions you type are sent to Google\u2019s Gemini model to be interpreted, and place names to open geocoding services. It stores no marine data. If you contact the team, the information you choose to send is used to respond to that message and to understand interest in the research.', `Privacy and grievance concerns can be sent to ${CONTACT_EMAIL}. The privacy owner is ${PRIVACY_OWNER}; the team aims to acknowledge messages within 5 business days, although complex matters may take longer.`, 'A future ORCA product would need a specific privacy notice covering user accounts, workspace data, source access, retention, deletion, and any analytics. That notice would be written before those features are introduced.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/terms': { eyebrow: '09 / Terms', title: 'Use this prototype for understanding, not navigation.', body: 'These plain-language terms describe the current public experience and its limits.', heading: 'A research presentation, not an operational service.', paragraphs: ['The content on this website is informational and part of an SIH 2026 prototype. It may be incomplete, delayed, or missing when a source fails. It is not a forecast, a navigation instruction, a safety guarantee, or professional, legal, regulatory, or scientific advice.', 'Do not rely on the website to make time-sensitive decisions at sea or in a coastal operation. Verify relevant conditions with qualified professionals and official sources. The prototype is provided for review and research discussion.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/cookies': { eyebrow: '09A / Cookies', title: 'A small cookie surface.', body: 'The current public prototype does not use advertising or analytics cookies.', heading: 'One cookie, for signing in.', paragraphs: ['The ORCA app sets one httpOnly session cookie when you sign in. There are no advertising or analytics cookies and no cross-site tracking. The mobile navigation does not persist a profile or location history.', 'If analytics, embedded media, or preference storage is introduced, the site will explain the purpose, provider, retention, and available choices before those tools are enabled.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/acceptable-use': { eyebrow: '09B / Acceptable use', title: 'Use ORCA to question the workflow.', body: 'The prototype is for research, critique, and product discussion.', heading: 'Keep consequential decisions with qualified people.', paragraphs: ['You may use the public site to understand the ORCA concept, discuss marine decision-support workflows, and identify questions for research. Do not represent the prototype as an official government, ISRO, maritime-authority, warning, or navigation service.', 'Do not use ORCA output as the sole basis for safety-critical decisions, mislead others about source authority, probe systems you do not own, or submit personal information that the current prototype does not need.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/ai-transparency': { eyebrow: '09C / AI transparency', title: 'AI should explain the work, not invent the evidence.', body: 'ORCA is designed around a visible boundary between language assistance and deterministic analysis.', heading: 'A model is one layer in the workflow.', paragraphs: ['A future ORCA system may use AI to interpret natural-language questions, extract context, coordinate tools, summarize validated evidence, and translate explanations. It should not invent measurements, coordinates, source freshness, warnings, distances, geometry, or risk scores.', 'The ORCA app uses Google\u2019s Gemini model to interpret questions, choose tools and write answers. Live marine data comes only through tools, and a deterministic check flags numbers in an answer that no tool returned. Any future deployment would need documented intended use, evaluation, human oversight, incident handling, and a way to inspect evidence without exposing hidden prompts or chain-of-thought.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
   '/accessibility': { eyebrow: '09D / Accessibility', title: 'A decision-support idea should be readable by the people judging it.', body: 'ORCA aims to follow WCAG 2.2 AA practices across its public experience.', heading: 'Access is part of product quality.', paragraphs: ['The public site uses semantic landmarks, keyboard-visible focus, labeled controls, responsive layouts, non-colour status cues, readable contrast, and reduced-motion support. The content is written to be understandable without access to a map or a live dashboard.', 'This prototype has not been independently certified. If a page, interaction, or document creates a barrier, please describe what happened through the contact route so it can be reviewed.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/vulnerability-disclosure': { eyebrow: '09E / Vulnerability disclosure', title: 'A safe route for reporting security concerns.', body: 'The current ORCA site is a public prototype with no accounts, sensitive data store, or live decision API.', heading: 'Please report suspected vulnerabilities responsibly.', paragraphs: ['Do not attempt to access another person’s data, disrupt availability, or test third-party systems through the public site. Preserve only the minimum evidence needed to explain the issue and avoid sending secrets or personal data.', `Email suspected vulnerabilities to ${SECURITY_EMAIL}. This mailbox is monitored by the ORCA research team; please include a concise description, affected page or component, reproduction steps, and impact without sending secrets. We aim to acknowledge reports within 5 business days.`, 'The team will assess reports in good faith and coordinate a safe resolution. Supported versions and a formal safe-harbour policy will be published before a connected ORCA service launches.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/data-retention': { eyebrow: '09F / Data retention', title: 'Retention should follow a purpose.', body: 'The public prototype does not operate an account, query-history, or evidence-storage service.', heading: 'There is no hidden marine history behind this page.', paragraphs: ['The current site does not intentionally retain precise location history, vessel telemetry, query history, or user profiles. A future product would define retention by data class, document source-provider requirements, and provide deletion and export paths where applicable.', 'Retention periods should be reviewed for jurisdiction, purpose, security, source licensing, and operational need instead of using one universal duration.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/data-deletion': { eyebrow: '09G / Data deletion', title: 'Deletion should be a real workflow, not a promise.', body: 'The current public prototype has no user account or stored query workspace to delete.', heading: 'Future deletion controls belong in the product.', paragraphs: ['Because the public site does not create accounts or store a user workspace, there is no current self-service deletion action. If you contact the team, only the information needed to handle that message should be retained for an identified purpose.', 'Before a future account-based product launches, deletion should cover user records, saved analyses, location history, exports, caches, backups, and connected processors according to documented exceptions and legal requirements.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
-  '/subprocessors': { eyebrow: '09H / Providers', title: 'No undisclosed processing chain.', body: 'The public prototype does not currently connect to marine providers, analytics vendors, or an AI API.', heading: 'Connected services will be disclosed before they matter.', paragraphs: ['This site presents local content and illustrative diagrams. It does not claim live INCOIS, IMD, ISRO, satellite, mapping, payment, or AI-provider integrations. Source families on the data page are design targets, not current retrievals.', 'If a future service processes personal data or query content through a provider, the provider, purpose, region, data categories, retention, and contractual role should be documented here or in an accompanying processing notice.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/vulnerability-disclosure': { eyebrow: '09E / Vulnerability disclosure', title: 'A safe route for reporting security concerns.', body: 'The ORCA site is a prototype with email-and-password accounts, saved locations and conversation history, and no payment or sensitive personal data.', heading: 'Please report suspected vulnerabilities responsibly.', paragraphs: ['Do not attempt to access another person’s data, disrupt availability, or test third-party systems through the public site. Preserve only the minimum evidence needed to explain the issue and avoid sending secrets or personal data.', `Email suspected vulnerabilities to ${SECURITY_EMAIL}. This mailbox is monitored by the ORCA research team; please include a concise description, affected page or component, reproduction steps, and impact without sending secrets. We aim to acknowledge reports within 5 business days.`, 'The team will assess reports in good faith and coordinate a safe resolution. Supported versions and a formal safe-harbour policy will be published before a connected ORCA service launches.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/data-retention': { eyebrow: '09F / Data retention', title: 'Retention should follow a purpose.', body: 'The prototype keeps accounts, saved locations and conversations, and no marine data or vessel telemetry.', heading: 'There is no hidden marine history behind this page.', paragraphs: ['ORCA keeps your account, the locations you save and your conversation history until you delete them. It does not retain vessel telemetry. A future product would define retention by data class, document source-provider requirements, and provide deletion and export paths where applicable.', 'Retention periods should be reviewed for jurisdiction, purpose, security, source licensing, and operational need instead of using one universal duration.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/data-deletion': { eyebrow: '09G / Data deletion', title: 'Deletion should be a real workflow, not a promise.', body: 'You can delete saved locations and conversations inside the app.', heading: 'Future deletion controls belong in the product.', paragraphs: ['Remove saved locations on the Watchlist page and delete conversations on the History page. Account deletion is not yet self-service: email the contact address. If you contact the team, only the information needed to handle that message should be retained for an identified purpose.', 'Before a future account-based product launches, deletion should cover user records, saved analyses, location history, exports, caches, backups, and connected processors according to documented exceptions and legal requirements.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
+  '/subprocessors': { eyebrow: '09H / Providers', title: 'No undisclosed processing chain.', body: 'ORCA connects to public marine data providers and to an AI model provider, all listed here.', heading: 'Connected services will be disclosed before they matter.', paragraphs: ['The app calls INCOIS (PFZ), NDMA SACHET (alerts), Open-Meteo (forecast and place search), NOAA CoastWatch (satellite SST and chlorophyll), GDACS (cyclones), Marine Regions/VLIZ (boundaries), UNEP-WCMC WDPA (protected areas), OpenStreetMap Nominatim (place names), Esri (map tiles) and Google (Gemini language model). It has no ISRO, MOSDAC or Bhuvan integration and no payment or analytics provider.', 'If a future service processes personal data or query content through a provider, the provider, purpose, region, data categories, retention, and contractual role should be documented here or in an accompanying processing notice.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
   '/third-party-licenses': { eyebrow: '09I / Licenses', title: 'Attribution belongs in the product.', body: 'The public prototype uses open-source software and should preserve the licenses that make it possible.', heading: 'A short notice for a small prototype.', paragraphs: ['The application is built with open-source web tooling, including React, Vite, Tailwind CSS, Wouter, Lucide icons, and related dependencies. Their respective license texts and notices remain authoritative and should be included in a release inventory before distribution.', 'This page is a product-level summary, not a replacement for the generated dependency license inventory. No proprietary marine-provider code or data is claimed here.'], version: '0.1', effective: '17 September 2026', scope: 'Public prototype website' },
 };
 
@@ -656,7 +594,7 @@ function ContactPage() {
 }
 
 function StatusPage() {
-  return <main><PageIntro eyebrow="12 / Status" title="A clear status for a deliberately small system." body="This page describes the public prototype, not a live operational platform. There are no connected production services behind the ORCA website." number="ORCA / STATUS" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8"><div className="flex items-center gap-3 border-b border-[hsl(var(--border))] pb-6"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--accent))]" /><h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-[hsl(var(--primary))]">Public prototype · available</h2></div><div className="grid gap-6 pt-7 sm:grid-cols-3"><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Website</p><p className="mt-2 text-sm text-[hsl(var(--primary))]">Static public experience</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Decision API</p><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Not connected</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Marine providers</p><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Not connected</p></div></div></div></section><section className="bg-[#ebe9df]"><div className="mx-auto max-w-[1280px] px-5 py-16 lg:px-8"><p className="max-w-2xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">If a future MVP introduces connected services, this page will report their actual availability, freshness, and failure state. It will not flatten unavailable providers into a green light.</p></div></section></main>;
+  return <main><PageIntro eyebrow="12 / Status" title="A clear status for a deliberately small system." body="This page describes the ORCA prototype. It reads live public sources; the app\u2019s Data sources page shows each source\u2019s health at this moment. It is not an operational platform." number="ORCA / STATUS" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8"><div className="flex items-center gap-3 border-b border-[hsl(var(--border))] pb-6"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--accent))]" /><h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-[hsl(var(--primary))]">Public prototype · available</h2></div><div className="grid gap-6 pt-7 sm:grid-cols-3"><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Website</p><p className="mt-2 text-sm text-[hsl(var(--primary))]">Public pages · available</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">ORCA app</p><p className="mt-2 text-sm text-[hsl(var(--primary))]">Live agent · prototype</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[0.13em] text-[hsl(var(--muted-foreground))]">Marine providers</p><p className="mt-2 text-sm text-[hsl(var(--primary))]">Live public sources · see app</p></div></div></div></section><section className="bg-[#ebe9df]"><div className="mx-auto max-w-[1280px] px-5 py-16 lg:px-8"><p className="max-w-2xl text-sm leading-7 text-[hsl(var(--muted-foreground))]">The app\u2019s Data sources page reports each source\u2019s actual availability, freshness and failure state. It does not flatten unavailable providers into a green light.</p></div></section></main>;
 }
 
 function MethodologyPage() {
@@ -667,299 +605,36 @@ function ResearchPage() {
   return <main><PageIntro eyebrow="14 / Research" title="A prototype is a question made visible." body="The next phase is not simply to add more data. It is to learn whether an evidence-audited workflow helps real people ask better questions and make better-informed calls." number="ORCA / RESEARCH" /><section className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><div className="grid gap-4 md:grid-cols-[1fr_1fr]"><div className="rounded-2xl bg-[hsl(var(--secondary))] p-8"><Label>Now</Label><h2 className="mt-6 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Make the workflow legible.</h2><p className="mt-5 text-sm leading-6 text-[hsl(var(--muted-foreground))]">Test the language, visual grammar, evidence trail, and boundary statements with skeptical technical readers.</p></div><div className="rounded-2xl border border-[hsl(var(--border))] p-8"><Label>Next</Label><h2 className="mt-6 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Make the workflow real.</h2><p className="mt-5 text-sm leading-6 text-[hsl(var(--muted-foreground))]">Validate source access, calculations, spatial operations, data contracts, and human review with defined tasks.</p></div></div></section><section className="border-y border-[hsl(var(--border))] bg-[#ebe9df]"><div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-20 lg:grid-cols-[.7fr_1.3fr] lg:px-8"><SectionHeading eyebrow="A possible MVP path" title="Earn capability one layer at a time." /><div className="space-y-4">{['A narrow set of validated coastal questions', 'A small, versioned source registry', 'Tested spatial and temporal operations', 'Evidence views reviewed with domain experts', 'A measured pilot with clear stop conditions'].map((item, i) => <div key={item} className="flex items-start gap-4 border-b border-[hsl(var(--border))] pb-4"><span className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">0{i + 1}</span><p className="text-sm text-[hsl(var(--primary))]">{item}</p></div>)}</div></div></section><div className="mx-auto max-w-[1280px] px-5 py-20 lg:px-8 lg:py-28"><SectionHeading eyebrow="Join the critique" title="The best next input is a hard question." body="Tell us what a useful evidence trail would need to show in your domain." /><div className="mt-8"><ButtonLink href="/contact">Start a conversation</ButtonLink></div></div></main>;
 }
 
-function DemoStatus({ value }: { value: string }) {
-  const label = value === 'fixture' ? 'Fixture' : value === 'stale' ? 'Stale' : value === 'unavailable' ? 'Unavailable' : value === 'derived' ? 'Derived' : 'Assumed';
-  const className = value === 'unavailable' ? 'border-[hsl(var(--muted-foreground))]/30 text-[hsl(var(--muted-foreground))]' : value === 'stale' ? 'border-[hsl(var(--accent))]/50 text-[hsl(var(--accent))]' : value === 'assumed' ? 'border-[hsl(var(--secondary-foreground))]/30 text-[hsl(var(--secondary-foreground))]' : 'border-[hsl(var(--primary))]/25 text-[hsl(var(--primary))]';
-  return <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono-ui text-[9px] uppercase tracking-[0.1em] ${className}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{label}</span>;
-}
-
-function DemoMap({ label, note }: { label: string; note: string }) {
-  return (
-    <div className="page-grid relative min-h-[340px] overflow-hidden rounded-2xl border border-[hsl(var(--primary))]/20 bg-[#dfece5]">
-      <div className="absolute inset-0 opacity-70 contour-lines" />
-      <svg viewBox="0 0 600 420" className="absolute inset-0 h-full w-full" role="img" aria-label="Illustrative Digha map with a synthetic route segment and context layers">
-        <path d="M-20 302 C 80 250, 110 341, 182 290 S 294 264, 365 294 S 486 350, 620 272" fill="none" stroke="#8bb5a9" strokeWidth="2" />
-        <path d="M-20 322 C 80 270, 114 361, 186 310 S 296 284, 369 314 S 486 370, 620 292" fill="none" stroke="#8bb5a9" strokeWidth="1" />
-        <path d="M55 0 C 125 70, 95 130, 164 182 S 232 263, 206 350" fill="none" stroke="#9fc5bb" strokeWidth="1.5" />
-        <path d="M99 0 C 167 75, 138 135, 202 188 S 269 272, 242 360" fill="none" stroke="#9fc5bb" strokeWidth="1" />
-        <path d="M0 122 C 110 96, 194 137, 288 102 S 447 74, 600 110" fill="none" stroke="#5d9990" strokeWidth="1.5" strokeDasharray="5 7" />
-        <path d="M78 372 L 490 72" stroke="#e0715c" strokeWidth="3" strokeDasharray="9 7" />
-        <circle cx="78" cy="372" r="7" fill="#e0715c" stroke="#f4f5ed" strokeWidth="4" />
-        <circle cx="490" cy="72" r="7" fill="#e0715c" stroke="#f4f5ed" strokeWidth="4" />
-        <circle cx="314" cy="224" r="19" fill="#f4f5ed" fillOpacity=".85" stroke="#e0715c" strokeWidth="2" />
-        <circle cx="314" cy="224" r="4" fill="#e0715c" />
-      </svg>
-      <div className="absolute left-4 top-4 max-w-[220px] rounded bg-[hsl(var(--card))]/90 px-3 py-2 backdrop-blur-sm">
-        <p className="font-mono-ui text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--muted-foreground))]">{label}</p>
-        <p className="mt-1 text-xs font-semibold text-[hsl(var(--primary))]">Illustrative geometry · not navigational</p>
-      </div>
-      <div className="absolute bottom-4 left-4 max-w-[310px] rounded bg-[hsl(var(--card))]/90 px-3 py-2 text-[10px] leading-4 text-[hsl(var(--muted-foreground))] backdrop-blur-sm">{note}</div>
-      <div className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--primary))]/20 bg-[hsl(var(--card))]/75 text-[hsl(var(--primary))]"><Compass size={18} /></div>
-    </div>
-  );
-}
-
-function DighaDemoPage() {
-  const defaultQuestion = "For a small fishing vessel near Digha, which nearshore window from 12–18 June has better support from the available evidence for surface-current conditions?";
-  const [question, setQuestion] = useState(defaultQuestion);
-  const [result, setResult] = useState<DecisionDemoResult | undefined>(undefined);
-  const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
-  const mutation = useRunDighaDecisionDemo();
-
-  const runDemo = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    mutation.mutate({ data: { question: question.trim() } }, {
-      onSuccess: (data) => {
-        setResult(data);
-        setExpandedEvidence(null);
-      },
-    });
-  };
-
-  const reset = () => {
-    setQuestion(defaultQuestion);
-    setResult(undefined);
-    setExpandedEvidence(null);
-    mutation.reset();
-  };
-
-  return (
-    <main className="bg-[hsl(var(--background))]">
-      <div className="border-b border-[hsl(var(--accent))]/40 bg-[#ebe9df]">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <span className="font-mono-ui text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--primary))]">Digha / fishing decision demonstration</span>
-          <span className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">Demo fixture · no live providers connected</span>
-        </div>
-      </div>
-      <section className="page-grid border-b border-[hsl(var(--border))]">
-        <div className="mx-auto max-w-[1280px] px-5 py-14 lg:px-8 lg:py-20">
-          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-            <div className="max-w-3xl">
-              <Label>ORCA / decision loop</Label>
-              <h1 className="mt-5 font-display text-5xl font-semibold leading-[.96] tracking-[-0.065em] text-[hsl(var(--primary))] sm:text-7xl">Ask the Digha question. Inspect the answer.</h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-[hsl(var(--muted-foreground))]">This demonstration extracts a place, time window, and activity frame, then runs each workflow stage with an explicit status. It shows how ORCA would expose evidence and uncertainty; it does not provide live marine conditions or a fishing instruction.</p>
-            </div>
-            <div className="shrink-0 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 lg:w-64">
-              <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">Scenario last run</p>
-              <p className="mt-2 text-sm font-semibold text-[hsl(var(--primary))]">14 Feb 2026 fixture</p>
-              <p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Local demonstration record, not a source update.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="mx-auto max-w-[1280px] px-5 py-10 lg:px-8 lg:py-16">
-        <form onSubmit={runDemo} className="rounded-2xl border border-[hsl(var(--primary))]/20 bg-[hsl(var(--card))] p-5 soft-shadow sm:p-7">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-3">
-                <label htmlFor="digha-question" className="font-mono-ui text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--accent))]">01 / Your question</label>
-                <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]">Natural language</span>
-              </div>
-              <textarea id="digha-question" data-testid="input-digha-question" value={question} onChange={(event) => setQuestion(event.target.value)} minLength={12} maxLength={1000} rows={3} className="mt-3 w-full resize-y rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-3 text-sm leading-6 text-[hsl(var(--primary))] outline-none transition-colors focus:border-[hsl(var(--accent))]" />
-              <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">Try the preset first. The server returns a fixed Digha fixture so the workflow stays inspectable.</p>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <button type="submit" data-testid="button-run-digha-demo" disabled={mutation.isPending || question.trim().length < 12} className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-5 py-3 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--accent))] disabled:cursor-not-allowed disabled:opacity-45">{mutation.isPending ? <><Activity size={14} className="animate-pulse" /> Preparing fixture</> : <><ArrowRight size={14} /> Run fixture analysis</>}</button>
-              <button type="button" data-testid="button-reset-digha-demo" onClick={reset} className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--primary))]/25 px-5 py-3 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary))] transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--accent))]"><X size={13} /> Reset scenario</button>
-            </div>
-          </div>
-          {mutation.isPending && <div className="mt-6 border-t border-[hsl(var(--border))] pt-5"><div className="flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]"><Activity size={14} className="animate-pulse" /> Preparing fixture inputs · running deterministic comparison</div><div className="mt-3 h-1 overflow-hidden rounded-full bg-[hsl(var(--secondary))]"><div className="h-full w-2/3 animate-pulse rounded-full bg-[hsl(var(--accent))]" /></div></div>}
-          {mutation.isError && <div role="alert" className="mt-6 flex items-start gap-3 border-t border-[hsl(var(--accent))]/40 pt-5 text-sm text-[hsl(var(--primary))]"><AlertTriangle size={17} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" /><div><strong>The fixture could not be evaluated.</strong><p className="mt-1 text-[hsl(var(--muted-foreground))]">Retry the fixture run. No live source was queried.</p></div></div>}
-        </form>
-
-        {result && (
-          <div className="mt-10 space-y-5">
-            <div className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
-              <section className="rounded-2xl bg-[hsl(var(--primary))] p-6 text-[hsl(var(--primary-foreground))] sm:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-3"><Label>Finding / directional only</Label><span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--primary-foreground))]/55">Run {result.runId}</span></div>
-                <h2 className="mt-6 max-w-3xl font-display text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl">{result.finding}</h2>
-                <p className="mt-5 max-w-2xl text-sm leading-6 text-[hsl(var(--primary-foreground))]/70">{result.findingQualifier}</p>
-                <div className="mt-7 flex flex-wrap gap-2">{result.evidence.filter((item) => item.usedInFinding).map((item) => <button key={item.id} type="button" onClick={() => { setExpandedEvidence(item.id); document.getElementById(`evidence-${item.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="rounded-full border border-[hsl(var(--accent))]/60 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--accent))]">{item.id} · inspect</button>)}</div>
-              </section>
-              <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 sm:p-8">
-                <div className="flex items-center justify-between"><Label>Confidence</Label><span className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">Limited</span></div>
-                <p className="mt-6 font-display text-4xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">{result.confidence}</p>
-                <p className="mt-4 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{result.confidenceReason}</p>
-              </section>
-            </div>
-
-            <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7">
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><Label>02 / Extracted context</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What the question resolved to</h2></div><span className="inline-flex items-center gap-2 font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]"><SlidersHorizontal size={13} /> Review before acting</span></div>
-              <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {Object.entries({ Location: result.context.location, Coordinates: result.context.coordinates, "Time window": result.context.timeWindow, Timezone: result.context.timezone, Activity: result.context.activity, Vessel: result.context.vessel }).map(([key, value]) => <div key={key} className="border-t border-[hsl(var(--border))] pt-3"><p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">{key}</p><p className="mt-2 text-sm leading-5 text-[hsl(var(--primary))]">{value}</p></div>)}
-              </div>
-              <p className="mt-6 border-l-2 border-[hsl(var(--accent))] pl-4 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{result.context.extractedFrom}</p>
-            </section>
-
-            <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
-              <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7">
-                <div className="flex items-start justify-between gap-4"><div><Label>03 / Workflow status</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Every stage stays visible</h2></div><span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]">8 stages</span></div>
-                <div className="mt-7 divide-y divide-[hsl(var(--border))]">{result.stages.map((stage) => <div key={stage.id} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-start"><div><div className="flex flex-wrap items-center gap-3"><h3 className="text-sm font-semibold text-[hsl(var(--primary))]">{stage.label}</h3><DemoStatus value={stage.status} /></div><p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{stage.detail}</p></div><div className="text-left sm:text-right"><p className="font-mono-ui text-[9px] uppercase leading-4 tracking-[0.08em] text-[hsl(var(--muted-foreground))]">{stage.freshness}</p>{stage.sourceRef && <p className="mt-1 font-mono-ui text-[9px] text-[hsl(var(--accent))]">{stage.sourceRef}</p>}</div></div>)}</div>
-              </section>
-              <DemoMap label={result.mapLabel} note={result.mapNote} />
-            </div>
-
-            <div className="grid gap-5 lg:grid-cols-2">
-              <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--secondary))] p-5 sm:p-7"><Label>Risk drivers</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Why this finding moved</h2><div className="mt-6 space-y-5">{result.riskDrivers.map((driver) => <div key={driver.label} className="border-t border-[hsl(var(--secondary-foreground))]/15 pt-3"><div className="flex items-start justify-between gap-4"><h3 className="text-sm font-semibold text-[hsl(var(--primary))]">{driver.label}</h3><span className="font-mono-ui text-[9px] text-[hsl(var(--accent))]">{driver.sourceRef}</span></div><p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{driver.signal}</p><p className="mt-1 text-xs font-semibold leading-5 text-[hsl(var(--primary))]">{driver.impact}</p></div>)}</div></section>
-              <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7"><Label>Assumptions in this run</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What the fixture presumes</h2><ul className="mt-6 space-y-4">{result.assumptions.map((assumption) => <li key={assumption} className="flex gap-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]"><CircleDot size={15} className="mt-1 shrink-0 text-[hsl(var(--accent))]" />{assumption}</li>)}</ul></section>
-            </div>
-
-            <section className="rounded-2xl border border-[hsl(var(--accent))]/35 bg-[#ebe9df] p-5 sm:p-7"><div className="flex items-start gap-3"><AlertTriangle size={18} className="mt-1 shrink-0 text-[hsl(var(--accent))]" /><div><Label>Limitations</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What this run cannot establish</h2><ul className="mt-5 grid gap-3 sm:grid-cols-2">{result.limitations.map((limitation) => <li key={limitation} className="text-sm leading-6 text-[hsl(var(--muted-foreground))]">{limitation}</li>)}</ul></div></div></section>
-
-            <section className="rounded-2xl border border-[hsl(var(--primary))]/20 bg-[hsl(var(--primary))] p-5 text-[hsl(var(--primary-foreground))] sm:p-7"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><Label>Evidence ledger · {result.evidence.length} items</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em]">Inspect the work behind the finding</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">Each reference names its source family, freshness, operation, and whether it contributed. Unavailable inputs remain visible rather than being replaced silently.</p></div><Clipboard size={23} className="text-[hsl(var(--accent))]" /></div><div className="mt-7 divide-y divide-[hsl(var(--primary-foreground))]/15">{result.evidence.map((item) => <div id={`evidence-${item.id}`} key={item.id} className="py-4"><button type="button" aria-expanded={expandedEvidence === item.id} onClick={() => setExpandedEvidence(expandedEvidence === item.id ? null : item.id)} className="flex w-full flex-col gap-3 text-left sm:flex-row sm:items-start sm:justify-between"><div className="flex gap-3"><span className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">{item.id}</span><div><h3 className="text-sm font-semibold">{item.claim}</h3><p className="mt-1 text-xs text-[hsl(var(--primary-foreground))]/55">{item.source} · {item.operation}</p></div></div><div className="flex items-center gap-3 sm:shrink-0"><DemoStatus value={item.status === 'used' ? 'derived' : item.status} /><ChevronDown size={16} className={`text-[hsl(var(--primary-foreground))]/55 transition-transform ${expandedEvidence === item.id ? 'rotate-180' : ''}`} /></div></button>{expandedEvidence === item.id && <div className="ml-8 mt-4 grid gap-3 border-l border-[hsl(var(--accent))]/50 pl-4 text-xs leading-5 text-[hsl(var(--primary-foreground))]/65 sm:grid-cols-3"><p><strong className="text-[hsl(var(--primary-foreground))]">Timestamp</strong><br />{item.timestamp}</p><p><strong className="text-[hsl(var(--primary-foreground))]">Used in finding</strong><br />{item.usedInFinding ? 'Yes · referenced above' : 'No · transparency only'}</p><p><strong className="text-[hsl(var(--primary-foreground))]">Detail</strong><br />{item.detail}</p></div>}</div>)}</div></section>
-          </div>
-        )}
-      </section>
-    </main>
-  );
-}
-
-function ProtectedWorkspace() {
-  const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) {
-    return <main className="flex min-h-[70vh] items-center justify-center"><Activity className="animate-pulse text-[hsl(var(--accent))]" /></main>;
-  }
-  if (!isSignedIn) {
-    return <Redirect to="/sign-in" />;
-  }
-  return <WorkspacePage />;
-}
-
-function WorkspacePage() {
-  const defaultQuestion = "For a small fishing vessel near Digha, which nearshore window from 12–18 June has better support from the available evidence for surface-current conditions?";
-  const { user } = useUser();
-  const client = useQueryClient();
-  const [question, setQuestion] = useState(defaultQuestion);
-  const [result, setResult] = useState<DecisionDemoResult>();
-  const savedRuns = useListDecisionRuns();
-  const run = useCreateDighaDecisionRun({
-    mutation: {
-      onSuccess: (saved) => {
-        setResult(saved.result);
-        client.invalidateQueries({ queryKey: getListDecisionRunsQueryKey() });
-      },
-    },
-  });
-
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    run.mutate({ data: { question: question.trim() } });
-  };
-
-  return (
-    <main className="bg-[hsl(var(--background))]">
-      <section className="page-grid border-b border-[hsl(var(--border))]">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-7 px-5 py-12 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-16">
-          <div className="max-w-3xl">
-            <Label>ORCA / private workspace</Label>
-            <h1 className="mt-5 font-display text-5xl font-semibold leading-[.96] tracking-[-0.065em] text-[hsl(var(--primary))] sm:text-7xl">Your decision trail starts here.</h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-[hsl(var(--muted-foreground))]">Run the Digha MVP, keep the question and result attached to your account, and inspect the evidence boundary before treating any finding as useful.</p>
-          </div>
-          <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 lg:w-72">
-            <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">Signed in as</p>
-            <p className="mt-2 truncate text-sm font-semibold text-[hsl(var(--primary))]">{user?.primaryEmailAddress?.emailAddress ?? user?.username ?? 'ORCA user'}</p>
-            <p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Saved runs are private to this account.</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1280px] px-5 py-10 lg:px-8 lg:py-16">
-        <div className="grid gap-5 lg:grid-cols-[1.25fr_.75fr]">
-          <form onSubmit={submit} className="rounded-2xl border border-[hsl(var(--primary))]/20 bg-[hsl(var(--card))] p-5 soft-shadow sm:p-7">
-            <div className="flex items-center justify-between gap-3">
-              <label htmlFor="workspace-question" className="font-mono-ui text-[10px] uppercase tracking-[0.15em] text-[hsl(var(--accent))]">01 / Ask a question</label>
-              <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]">Saved on run</span>
-            </div>
-            <textarea id="workspace-question" data-testid="input-workspace-question" value={question} onChange={(event) => setQuestion(event.target.value)} minLength={12} maxLength={1000} rows={5} className="mt-4 w-full resize-y rounded-lg border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-3 text-sm leading-6 text-[hsl(var(--primary))] outline-none transition-colors focus:border-[hsl(var(--accent))]" />
-            <p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">The current MVP uses a clearly labeled Digha fixture. No live marine provider is being represented as connected.</p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button type="submit" data-testid="button-run-workspace" disabled={run.isPending || question.trim().length < 12} className="inline-flex items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-5 py-3 font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--accent))] disabled:cursor-not-allowed disabled:opacity-45">{run.isPending ? <><Activity size={14} className="animate-pulse" /> Saving run</> : <><ArrowRight size={14} /> Run and save</>}</button>
-              <Link href="/demo/digha" className="font-mono-ui text-[10px] uppercase tracking-[0.13em] text-[hsl(var(--accent))]">View public fixture</Link>
-            </div>
-            {run.isError && <p role="alert" className="mt-5 border-t border-[hsl(var(--accent))]/40 pt-4 text-sm text-[hsl(var(--primary))]">The run could not be saved. Check the session and try again.</p>}
-          </form>
-
-          <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--primary))] p-5 text-[hsl(var(--primary-foreground))] sm:p-7">
-            <div className="flex items-start justify-between gap-4"><div><Label>02 / Saved runs</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em]">Your recent trail</h2></div><Database size={22} className="text-[hsl(var(--accent))]" /></div>
-            {savedRuns.isLoading && <p className="mt-8 text-sm text-[hsl(var(--primary-foreground))]/65">Loading your runs…</p>}
-            {savedRuns.isError && <p className="mt-8 text-sm text-[hsl(var(--primary-foreground))]/65">Saved runs are temporarily unavailable.</p>}
-            {!savedRuns.isLoading && !savedRuns.isError && savedRuns.data?.length === 0 && <p className="mt-8 text-sm leading-6 text-[hsl(var(--primary-foreground))]/65">No saved runs yet. Run the question to create the first private record.</p>}
-            <div className="mt-7 divide-y divide-[hsl(var(--primary-foreground))]/15">
-              {savedRuns.data?.map((saved) => (
-                <button key={saved.id} type="button" onClick={() => { setQuestion(saved.question); setResult(saved.result); }} className="block w-full py-4 text-left transition-colors first:pt-0 last:pb-0 hover:text-[hsl(var(--accent))]">
-                  <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--primary-foreground))]/50">{new Date(saved.createdAt).toLocaleString()}</span>
-                  <span className="mt-2 block line-clamp-2 text-sm leading-5">{saved.question}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {result ? (
-          <div className="mt-8 space-y-5">
-            <section className="rounded-2xl bg-[hsl(var(--primary))] p-6 text-[hsl(var(--primary-foreground))] sm:p-8">
-              <div className="flex flex-wrap items-center justify-between gap-3"><Label>03 / Finding · directional only</Label><span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--primary-foreground))]/55">Run {result.runId}</span></div>
-              <h2 className="mt-6 max-w-3xl font-display text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl">{result.finding}</h2>
-              <p className="mt-5 max-w-2xl text-sm leading-6 text-[hsl(var(--primary-foreground))]/70">{result.findingQualifier}</p>
-              <div className="mt-7 flex flex-wrap gap-2">{result.evidence.filter((item) => item.usedInFinding).map((item) => <span key={item.id} className="rounded-full border border-[hsl(var(--accent))]/60 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--accent))]">{item.id} · {item.claim}</span>)}</div>
-            </section>
-            <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
-              <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7">
-                <Label>04 / Resolved context</Label>
-                <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">What the question became</h2>
-                <div className="mt-7 grid gap-4 sm:grid-cols-2">{Object.entries({ Location: result.context.location, Coordinates: result.context.coordinates, "Time window": result.context.timeWindow, Activity: result.context.activity, Vessel: result.context.vessel }).map(([key, value]) => <div key={key} className="border-t border-[hsl(var(--border))] pt-3"><p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">{key}</p><p className="mt-2 text-sm leading-5 text-[hsl(var(--primary))]">{value}</p></div>)}</div>
-              </section>
-              <DemoMap label={result.mapLabel} note={result.mapNote} />
-            </div>
-            <section className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 sm:p-7">
-              <div className="flex items-start justify-between gap-4"><div><Label>05 / Evidence ledger</Label><h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Keep the boundary visible</h2></div><span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--muted-foreground))]">{result.evidence.length} items</span></div>
-              <div className="mt-7 divide-y divide-[hsl(var(--border))]">{result.evidence.map((item) => <div key={item.id} className="grid gap-2 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-start"><span className="font-mono-ui text-[10px] text-[hsl(var(--accent))]">{item.id}</span><div><h3 className="text-sm font-semibold text-[hsl(var(--primary))]">{item.claim}</h3><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{item.source} · {item.operation}</p></div><DemoStatus value={item.status === 'used' ? 'derived' : item.status} /></div>)}</div>
-            </section>
-            <section className="rounded-2xl border border-[hsl(var(--accent))]/35 bg-[#ebe9df] p-5 sm:p-7"><div className="flex items-start gap-3"><AlertTriangle size={18} className="mt-1 shrink-0 text-[hsl(var(--accent))]" /><div><Label>Limitations</Label><ul className="mt-4 grid gap-2 text-sm leading-6 text-[hsl(var(--muted-foreground))] sm:grid-cols-2">{result.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div></div></section>
-          </div>
-        ) : (
-          <div className="mt-8 rounded-2xl border border-dashed border-[hsl(var(--border))] p-10 text-center"><RouteIcon size={24} className="mx-auto text-[hsl(var(--accent))]" /><h2 className="mt-5 font-display text-3xl font-semibold tracking-[-0.05em] text-[hsl(var(--primary))]">Your next run will appear here.</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[hsl(var(--muted-foreground))]">The MVP keeps the finding, resolved context, map note, limitations, and evidence ledger together instead of returning an untraceable paragraph.</p></div>
-        )}
-      </section>
-    </main>
-  );
-}
-
 function HomeRedirect() {
-  const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) {
-    return <main className="flex min-h-[70vh] items-center justify-center"><Activity className="animate-pulse text-[hsl(var(--accent))]" /></main>;
-  }
-  return isSignedIn ? <Redirect to="/workspace" /> : <Home />;
-}
-
-function SignInPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] px-4 py-10">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
-    </div>
-  );
-}
-
-function SignUpPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] px-4 py-10">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
-    </div>
-  );
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Redirect to="/app" /> : <Home />;
 }
 
 function Router() {
+  const [location] = useLocation();
+  const inApp = location.startsWith('/app');
   return (
     <RoutedErrorBoundary>
       <PageMeta />
-      <Header />
+      {!inApp && <Header />}
       <div id="main-content" tabIndex={-1}>
         <Switch>
-          <Route path="/sign-in/*?" component={SignInPage} />
-          <Route path="/sign-up/*?" component={SignUpPage} />
+          <Route path="/sign-in" component={SignInPage} />
+          <Route path="/sign-up" component={SignUpPage} />
           <Route path="/" component={HomeRedirect} />
-          <Route path="/workspace" component={ProtectedWorkspace} />
+          <Route path="/app/*?"><AppShell><Suspense fallback={<p role="status" className="p-8 font-mono-ui text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))]">Loading…</p>}><Switch>
+            <Route path="/app" component={OverviewPage} />
+            <Route path="/app/ask" component={AskPage} />
+            <Route path="/app/map" component={ExplorerPage} />
+            <Route path="/app/watch" component={WatchPage} />
+            <Route path="/app/history" component={HistoryPage} />
+            <Route path="/app/sources" component={SourcesPage} />
+            <Route path="/app/settings" component={SettingsPage} />
+            <Route component={NotFound} />
+          </Switch></Suspense></AppShell></Route>
+          <Route path="/demo/digha"><Redirect to="/app/ask" /></Route>
+          <Route path="/workspace"><Redirect to="/app" /></Route>
           <Route path="/problem" component={ProblemPage} />
           <Route path="/how-it-works" component={HowItWorksPage} />
           <Route path="/technology" component={TechnologyPage} />
@@ -975,11 +650,10 @@ function Router() {
           <Route path="/status" component={StatusPage} />
           <Route path="/methodology" component={MethodologyPage} />
           <Route path="/research" component={ResearchPage} />
-          <Route path="/demo/digha" component={DighaDemoPage} />
           <Route component={NotFound} />
         </Switch>
       </div>
-      <Footer />
+      {!inApp && <Footer />}
     </RoutedErrorBoundary>
   );
 }
@@ -989,57 +663,17 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
-function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
-  const client = useQueryClient();
-  const previousUserId = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    const unsubscribe = addListener(({ user }) => {
-      const userId = user?.id ?? null;
-      if (previousUserId[0] !== undefined && previousUserId[0] !== userId) {
-        client.clear();
-      }
-      previousUserId[1](userId);
-    });
-    return unsubscribe;
-  }, [addListener, client, previousUserId]);
-
-  return null;
-}
-
-function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
-
-  return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
-      signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
-      localization={{
-        signIn: { start: { title: 'Welcome back', subtitle: 'Sign in to access your ORCA workspace' } },
-        signUp: { start: { title: 'Create your ORCA account', subtitle: 'Save your decision-support runs' } },
-      }}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-    >
-      <QueryClientProvider client={queryClient}>
-        <ClerkQueryClientCacheInvalidator />
-        <TooltipProvider>
-          <Router />
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
-  );
-}
-
 function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Router />
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </WouterRouter>
   );
 }

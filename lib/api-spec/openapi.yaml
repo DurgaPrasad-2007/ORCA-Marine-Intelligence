@@ -53,6 +53,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /decision-live/digha:
+    post:
+      operationId: runLiveDighaDecision
+      tags: [decision-demo]
+      summary: Run a live Digha marine and weather analysis
+      description: Queries public model APIs for Digha and returns a source-audited screening result. This is not an official safety advisory.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionDemoInput"
+      responses:
+        "200":
+          description: Live analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDemoResult"
+        "400":
+          description: Invalid question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Live sources unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /decision-runs:
     get:
       operationId: listDecisionRuns
@@ -153,7 +184,7 @@ components:
           type: string
         status:
           type: string
-          enum: [fixture, stale, unavailable, derived, assumed]
+          enum: [fixture, live, stale, unavailable, derived, assumed]
         detail:
           type: string
         sourceRef:
@@ -182,12 +213,12 @@ components:
           type: string
         type:
           type: string
-          enum: [derived, assumed, unavailable, fixture]
+          enum: [derived, assumed, unavailable, fixture, live]
         source:
           type: string
         status:
           type: string
-          enum: [fixture, stale, unavailable, used]
+          enum: [fixture, live, stale, unavailable, used]
         timestamp:
           type: string
         operation:
@@ -197,6 +228,49 @@ components:
         detail:
           type: string
       required: [id, claim, type, source, status, timestamp, operation, usedInFinding, detail]
+    AgentTrace:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        purpose:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+      required: [id, label, purpose, status, detail]
+    DecisionMetric:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        unit:
+          type: string
+        status:
+          type: string
+      required: [id, label, value, unit, status]
+    SourceSummary:
+      type: object
+      properties:
+        liveSources:
+          type: array
+          items:
+            type: string
+        unavailableSources:
+          type: array
+          items:
+            type: string
+        generatedAt:
+          type: string
+          format: date-time
+      required: [liveSources, unavailableSources, generatedAt]
     DecisionDemoResult:
       type: object
       properties:
@@ -242,6 +316,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EvidenceItem"
+        analysisMode:
+          type: string
+          enum: [fixture, live, partial-live]
+        intent:
+          type: string
+        detectedLanguage:
+          type: string
+        coverageNote:
+          type: string
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentTrace"
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionMetric"
+        sourceSummary:
+          $ref: "#/components/schemas/SourceSummary"
       required:
         - runId
         - scenarioLabel

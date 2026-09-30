@@ -11,6 +11,7 @@ export type WorkflowStageStatus = typeof WorkflowStageStatus[keyof typeof Workfl
 
 export const WorkflowStageStatus = {
   fixture: 'fixture',
+  live: 'live',
   stale: 'stale',
   unavailable: 'unavailable',
   derived: 'derived',

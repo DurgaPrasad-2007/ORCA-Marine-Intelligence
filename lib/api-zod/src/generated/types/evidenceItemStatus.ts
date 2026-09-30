@@ -11,6 +11,7 @@ export type EvidenceItemStatus = typeof EvidenceItemStatus[keyof typeof Evidence
 
 export const EvidenceItemStatus = {
   fixture: 'fixture',
+  live: 'live',
   stale: 'stale',
   unavailable: 'unavailable',
   used: 'used',

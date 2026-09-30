@@ -36,6 +36,7 @@ export type WorkflowStageStatus = typeof WorkflowStageStatus[keyof typeof Workfl
 
 export const WorkflowStageStatus = {
   fixture: 'fixture',
+  live: 'live',
   stale: 'stale',
   unavailable: 'unavailable',
   derived: 'derived',
@@ -67,6 +68,7 @@ export const EvidenceItemType = {
   assumed: 'assumed',
   unavailable: 'unavailable',
   fixture: 'fixture',
+  live: 'live',
 } as const;
 
 export type EvidenceItemStatus = typeof EvidenceItemStatus[keyof typeof EvidenceItemStatus];
@@ -74,6 +76,7 @@ export type EvidenceItemStatus = typeof EvidenceItemStatus[keyof typeof Evidence
 
 export const EvidenceItemStatus = {
   fixture: 'fixture',
+  live: 'live',
   stale: 'stale',
   unavailable: 'unavailable',
   used: 'used',
@@ -90,6 +93,37 @@ export interface EvidenceItem {
   usedInFinding: boolean;
   detail: string;
 }
+
+export interface AgentTrace {
+  id: string;
+  label: string;
+  purpose: string;
+  status: string;
+  detail: string;
+}
+
+export interface DecisionMetric {
+  id: string;
+  label: string;
+  value: string;
+  unit: string;
+  status: string;
+}
+
+export interface SourceSummary {
+  liveSources: string[];
+  unavailableSources: string[];
+  generatedAt: string;
+}
+
+export type DecisionDemoResultAnalysisMode = typeof DecisionDemoResultAnalysisMode[keyof typeof DecisionDemoResultAnalysisMode];
+
+
+export const DecisionDemoResultAnalysisMode = {
+  fixture: 'fixture',
+  live: 'live',
+  'partial-live': 'partial-live',
+} as const;
 
 export interface DecisionDemoResult {
   runId: string;
@@ -108,6 +142,13 @@ export interface DecisionDemoResult {
   mapLabel: string;
   mapNote: string;
   evidence: EvidenceItem[];
+  analysisMode?: DecisionDemoResultAnalysisMode;
+  intent?: string;
+  detectedLanguage?: string;
+  coverageNote?: string;
+  agents?: AgentTrace[];
+  metrics?: DecisionMetric[];
+  sourceSummary?: SourceSummary;
 }
 
 export interface SavedDecision {

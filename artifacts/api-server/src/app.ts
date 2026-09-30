@@ -1,50 +1,35 @@
-import express, { type Express } from "express";
-import cors from "cors";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import cookieParser from "cookie-parser";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import pinoHttp from "pino-http";
-import { clerkMiddleware } from "@clerk/express";
-import { publishableKeyFromHost } from "@clerk/shared/keys";
-import router from "./routes";
+import { loadUser } from "./auth";
 import { logger } from "./lib/logger";
-import {
-  CLERK_PROXY_PATH,
-  clerkProxyMiddleware,
-  getClerkProxyHost,
-} from "./middlewares/clerkProxyMiddleware";
+import router from "./routes";
 
 const app: Express = express();
 
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
-    },
-  }),
-);
-app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-app.use(cors({ credentials: true, origin: true }));
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
+app.use(pinoHttp({ logger, serializers: { req: (req) => ({ id: req.id, method: req.method, url: req.url?.split("?")[0] }), res: (res) => ({ statusCode: res.statusCode }) } }));
+app.use(cookieParser());
+app.use(express.json({ limit: "64kb" }));
+app.use(loadUser);
+// State-changing calls must come from this site (cookies are SameSite=Lax; this also rejects cross-site form posts).
+app.use("/api", (req, res, next) => {
+  if (["POST", "PATCH", "PUT", "DELETE"].includes(req.method) && req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return void res.status(403).json({ error: "Cross-site request blocked" });
+  next();
+});
 app.use("/api", router);
+
+// Single-process deployment: serve the built web app when it exists (dev uses the Vite server and its /api proxy).
+const webDist = path.resolve(process.cwd(), process.env["WEB_DIST"] ?? "../orca-web/dist/public");
+if (existsSync(webDist)) {
+  app.use(express.static(webDist));
+  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(webDist, "index.html")));
+}
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "unhandled error");
+  res.status(500).json({ error: "Internal error" });
+});
 
 export default app;

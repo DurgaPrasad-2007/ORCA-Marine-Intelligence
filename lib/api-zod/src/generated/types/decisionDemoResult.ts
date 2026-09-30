@@ -5,9 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AgentTrace } from './agentTrace';
 import type { DecisionContext } from './decisionContext';
+import type { DecisionDemoResultAnalysisMode } from './decisionDemoResultAnalysisMode';
+import type { DecisionMetric } from './decisionMetric';
 import type { EvidenceItem } from './evidenceItem';
 import type { RiskDriver } from './riskDriver';
+import type { SourceSummary } from './sourceSummary';
 import type { WorkflowStage } from './workflowStage';
 
 export interface DecisionDemoResult {
@@ -27,4 +31,11 @@ export interface DecisionDemoResult {
   mapLabel: string;
   mapNote: string;
   evidence: EvidenceItem[];
+  analysisMode?: DecisionDemoResultAnalysisMode;
+  intent?: string;
+  detectedLanguage?: string;
+  coverageNote?: string;
+  agents?: AgentTrace[];
+  metrics?: DecisionMetric[];
+  sourceSummary?: SourceSummary;
 }

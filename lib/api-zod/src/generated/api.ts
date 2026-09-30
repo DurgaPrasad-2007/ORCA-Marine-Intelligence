@@ -47,7 +47,7 @@ export const RunDighaDecisionDemoResponse = zod.object({
   "stages": zod.array(zod.object({
   "id": zod.string(),
   "label": zod.string(),
-  "status": zod.enum(['fixture', 'stale', 'unavailable', 'derived', 'assumed']),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'derived', 'assumed']),
   "detail": zod.string(),
   "sourceRef": zod.string().nullable(),
   "freshness": zod.string()
@@ -69,14 +69,123 @@ export const RunDighaDecisionDemoResponse = zod.object({
   "evidence": zod.array(zod.object({
   "id": zod.string(),
   "claim": zod.string(),
-  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture']),
+  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture', 'live']),
   "source": zod.string(),
-  "status": zod.enum(['fixture', 'stale', 'unavailable', 'used']),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'used']),
   "timestamp": zod.string(),
   "operation": zod.string(),
   "usedInFinding": zod.boolean(),
   "detail": zod.string()
-}))
+})),
+  "analysisMode": zod.enum(['fixture', 'live', 'partial-live']).optional(),
+  "intent": zod.string().optional(),
+  "detectedLanguage": zod.string().optional(),
+  "coverageNote": zod.string().optional(),
+  "agents": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "purpose": zod.string(),
+  "status": zod.string(),
+  "detail": zod.string()
+})).optional(),
+  "metrics": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "unit": zod.string(),
+  "status": zod.string()
+})).optional(),
+  "sourceSummary": zod.object({
+  "liveSources": zod.array(zod.string()),
+  "unavailableSources": zod.array(zod.string()),
+  "generatedAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * Queries public model APIs for Digha and returns a source-audited screening result. This is not an official safety advisory.
+ * @summary Run a live Digha marine and weather analysis
+ */
+export const runLiveDighaDecisionBodyQuestionMin = 12;
+export const runLiveDighaDecisionBodyQuestionMax = 1000;
+
+
+
+export const RunLiveDighaDecisionBody = zod.object({
+  "question": zod.string().min(runLiveDighaDecisionBodyQuestionMin).max(runLiveDighaDecisionBodyQuestionMax)
+})
+
+export const RunLiveDighaDecisionResponse = zod.object({
+  "runId": zod.string(),
+  "scenarioLabel": zod.string(),
+  "runStatus": zod.string(),
+  "generatedAt": zod.string(),
+  "context": zod.object({
+  "location": zod.string(),
+  "coordinates": zod.string(),
+  "timeWindow": zod.string(),
+  "timezone": zod.string(),
+  "activity": zod.string(),
+  "vessel": zod.string(),
+  "extractedFrom": zod.string()
+}),
+  "stages": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'derived', 'assumed']),
+  "detail": zod.string(),
+  "sourceRef": zod.string().nullable(),
+  "freshness": zod.string()
+})),
+  "finding": zod.string(),
+  "findingQualifier": zod.string(),
+  "confidence": zod.string(),
+  "confidenceReason": zod.string(),
+  "riskDrivers": zod.array(zod.object({
+  "label": zod.string(),
+  "signal": zod.string(),
+  "impact": zod.string(),
+  "sourceRef": zod.string()
+})),
+  "assumptions": zod.array(zod.string()),
+  "limitations": zod.array(zod.string()),
+  "mapLabel": zod.string(),
+  "mapNote": zod.string(),
+  "evidence": zod.array(zod.object({
+  "id": zod.string(),
+  "claim": zod.string(),
+  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture', 'live']),
+  "source": zod.string(),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'used']),
+  "timestamp": zod.string(),
+  "operation": zod.string(),
+  "usedInFinding": zod.boolean(),
+  "detail": zod.string()
+})),
+  "analysisMode": zod.enum(['fixture', 'live', 'partial-live']).optional(),
+  "intent": zod.string().optional(),
+  "detectedLanguage": zod.string().optional(),
+  "coverageNote": zod.string().optional(),
+  "agents": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "purpose": zod.string(),
+  "status": zod.string(),
+  "detail": zod.string()
+})).optional(),
+  "metrics": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "unit": zod.string(),
+  "status": zod.string()
+})).optional(),
+  "sourceSummary": zod.object({
+  "liveSources": zod.array(zod.string()),
+  "unavailableSources": zod.array(zod.string()),
+  "generatedAt": zod.coerce.date()
+}).optional()
 })
 
 
@@ -104,7 +213,7 @@ export const ListDecisionRunsResponseItem = zod.object({
   "stages": zod.array(zod.object({
   "id": zod.string(),
   "label": zod.string(),
-  "status": zod.enum(['fixture', 'stale', 'unavailable', 'derived', 'assumed']),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'derived', 'assumed']),
   "detail": zod.string(),
   "sourceRef": zod.string().nullable(),
   "freshness": zod.string()
@@ -126,14 +235,37 @@ export const ListDecisionRunsResponseItem = zod.object({
   "evidence": zod.array(zod.object({
   "id": zod.string(),
   "claim": zod.string(),
-  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture']),
+  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture', 'live']),
   "source": zod.string(),
-  "status": zod.enum(['fixture', 'stale', 'unavailable', 'used']),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'used']),
   "timestamp": zod.string(),
   "operation": zod.string(),
   "usedInFinding": zod.boolean(),
   "detail": zod.string()
-}))
+})),
+  "analysisMode": zod.enum(['fixture', 'live', 'partial-live']).optional(),
+  "intent": zod.string().optional(),
+  "detectedLanguage": zod.string().optional(),
+  "coverageNote": zod.string().optional(),
+  "agents": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "purpose": zod.string(),
+  "status": zod.string(),
+  "detail": zod.string()
+})).optional(),
+  "metrics": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "unit": zod.string(),
+  "status": zod.string()
+})).optional(),
+  "sourceSummary": zod.object({
+  "liveSources": zod.array(zod.string()),
+  "unavailableSources": zod.array(zod.string()),
+  "generatedAt": zod.coerce.date()
+}).optional()
 })
 })
 export const ListDecisionRunsResponse = zod.array(ListDecisionRunsResponseItem)
@@ -172,7 +304,7 @@ export const CreateDighaDecisionRunResponse = zod.object({
   "stages": zod.array(zod.object({
   "id": zod.string(),
   "label": zod.string(),
-  "status": zod.enum(['fixture', 'stale', 'unavailable', 'derived', 'assumed']),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'derived', 'assumed']),
   "detail": zod.string(),
   "sourceRef": zod.string().nullable(),
   "freshness": zod.string()
@@ -194,14 +326,37 @@ export const CreateDighaDecisionRunResponse = zod.object({
   "evidence": zod.array(zod.object({
   "id": zod.string(),
   "claim": zod.string(),
-  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture']),
+  "type": zod.enum(['derived', 'assumed', 'unavailable', 'fixture', 'live']),
   "source": zod.string(),
-  "status": zod.enum(['fixture', 'stale', 'unavailable', 'used']),
+  "status": zod.enum(['fixture', 'live', 'stale', 'unavailable', 'used']),
   "timestamp": zod.string(),
   "operation": zod.string(),
   "usedInFinding": zod.boolean(),
   "detail": zod.string()
-}))
+})),
+  "analysisMode": zod.enum(['fixture', 'live', 'partial-live']).optional(),
+  "intent": zod.string().optional(),
+  "detectedLanguage": zod.string().optional(),
+  "coverageNote": zod.string().optional(),
+  "agents": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "purpose": zod.string(),
+  "status": zod.string(),
+  "detail": zod.string()
+})).optional(),
+  "metrics": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "unit": zod.string(),
+  "status": zod.string()
+})).optional(),
+  "sourceSummary": zod.object({
+  "liveSources": zod.array(zod.string()),
+  "unavailableSources": zod.array(zod.string()),
+  "generatedAt": zod.coerce.date()
+}).optional()
 })
 })
 

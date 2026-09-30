@@ -14,4 +14,5 @@ export const EvidenceItemType = {
   assumed: 'assumed',
   unavailable: 'unavailable',
   fixture: 'fixture',
+  live: 'live',
 } as const;

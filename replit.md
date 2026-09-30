@@ -4,28 +4,27 @@ ORCA turns complex marine data into evidence-backed decisions through natural-la
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm install`, then copy `.env.example` to `.env` and set `GEMINI_API_KEY`
+- API: `cd artifacts/api-server && node build.mjs && PORT=8080 node --env-file-if-exists=../../.env dist/index.mjs`
+- Web (dev): `cd artifacts/orca-web && PORT=5173 BASE_PATH=/ API_PORT=8080 pnpm dev`
+- Single process: build the web app (`vite build`), then the API serves `orca-web/dist/public`
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server test` — deterministic tests; `test:live` — every adapter against the real services
+- `node evaluation/agent-flows.mjs` — the real model over the brief's queries (needs a key and internet)
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspaces, Node 22+, TypeScript 5.9
+- API: Express 5, `node:sqlite` for accounts, saved locations and conversations, custom cookie auth
+- Agent: Google Gemini function calling over nine deterministic tools (`artifacts/api-server/src/orca`)
+- Web: Vite, React 19, Tailwind 4, MapLibre GL, Recharts, wouter, TanStack Query
 
 ## Where things live
 
-- `artifacts/orca-web/` — public ORCA website and public-content routes.
-- `artifacts/api-server/` — shared API service for health, the public fixture, Clerk-protected decision runs, and PostgreSQL persistence.
-- `lib/api-spec/openapi.yaml` — source of truth for future versioned API contracts.
-- `attached_assets/` — source specification and project reference files.
+- `artifacts/orca-web/` — public site (`src/App.tsx`) and the signed-in app (`src/app/*`)
+- `artifacts/api-server/` — auth, agent, tools, live source adapters, map and watchlist endpoints
+- `evaluation/` — real-model behaviour checks and the browser walkthrough
+- `README.md` — architecture, sources, limits, demo script
 
 ## Architecture decisions
 
