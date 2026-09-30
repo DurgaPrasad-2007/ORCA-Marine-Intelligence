@@ -16,6 +16,23 @@ Open http://localhost:5173 and click **Continue as guest reviewer**. `npm run de
 
 Other commands: `npm test` (unit tests), `npm run build` then `npm start` (one process on :8080 serving the built app), `npm run typecheck`.
 
+## Deploy on Vercel (services)
+
+`vercel.json` defines two services in one project on one domain:
+
+| Service | Root | Public path | What it is |
+|---|---|---|---|
+| `orca-web` | `artifacts/orca-web` | `/` (everything except `/api`) | Vite/React app, SPA fallback to `index.html` |
+| `api-server` | `artifacts/api-server` | `/api/*` | Express API, entrypoint `dist/app.mjs` (pre-bundled by `node build.mjs`) |
+
+No bindings are needed: the browser calls `/api/...` on the same domain, and the API calls no other service. Vercel passes the original path to the service, so `/api/chat` reaches Express as `/api/chat`, which is how the routes are mounted.
+
+Set these environment variables in the Vercel project: `GEMINI_API_KEY` (required), `ORCA_MODEL` (optional), `ORCA_DB` (optional, see below).
+
+Test locally exactly as Vercel will run it: `npx vercel dev -L` then open http://localhost:3000.
+
+**Persistence:** a Vercel function's filesystem is read-only except `/tmp`, which is per-instance and ephemeral. On Vercel the SQLite file defaults to `/tmp/orca.db`, so accounts, saved locations and history survive only while an instance is warm. Live data is unaffected because nothing marine is stored. For durable accounts, point the app at a hosted database.
+
 ## What is in the app
 
 | Module | What it does |

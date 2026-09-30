@@ -25,6 +25,7 @@ await sleep(1000);
 await cdp("Page.navigate", { url: `${base}${path}` }); await sleep(4000);
 for (let i = 0; i < 180; i++) { await sleep(1000); if (await ev(`!document.querySelector('[data-testid="button-stop"]')`)) break; }
 await sleep(Number(process.env.WAIT ?? 7000));
+if (process.env.CHAT_TOP) { await ev(`document.querySelector('[aria-live="polite"]')?.scrollTo(0, 0)`); await sleep(600); }
 const shot = await cdp("Page.captureScreenshot", { format: "png" });
 writeFileSync(out, Buffer.from(shot.data, "base64"));
 console.log("saved", out, "at", await ev("location.pathname"), errors.length ? `errors: ${errors.join("; ")}` : "no page errors");

@@ -4,7 +4,9 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
-const file = process.env["ORCA_DB"] ?? path.resolve(process.cwd(), "data", "orca.db");
+// Vercel functions have a read-only filesystem except /tmp, which is per-instance and ephemeral: accounts and history
+// survive only while an instance is warm. Point ORCA_DB at durable storage (or swap this module) for real persistence.
+const file = process.env["ORCA_DB"] ?? (process.env["VERCEL"] ? "/tmp/orca.db" : path.resolve(process.cwd(), "data", "orca.db"));
 mkdirSync(path.dirname(file), { recursive: true });
 export const db = new DatabaseSync(file);
 db.exec(`
